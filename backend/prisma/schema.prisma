@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// @seed="ts-node prisma/seed.ts"
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Parking {
+  id            String          @id @default(uuid())
+  name          String
+  address       String
+  country       String
+  state         String
+  city          String
+  number        String
+  phone         String
+  description   String?
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  ParkingSlot   ParkingSlot[]
+  ParkingSensor ParkingSensor[]
+}
+
+model ParkingSlot {
+  id          String    @id @default(uuid())
+  parkingId   String
+  parking     Parking   @relation(fields: [parkingId], references: [id])
+  isAvailable Boolean   @default(true)
+  isActive    Boolean   @default(true)
+  number      Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Sensors     Sensors[]
+}
+
+model Sensors {
+  id            String        @id @default(uuid())
+  parkingSlotId String
+  parkingSlot   ParkingSlot   @relation(fields: [parkingSlotId], references: [id])
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  name          String
+  description   String?
+  type          SensorType
+  SensorsData   SensorsData[]
+}
+
+enum SensorType {
+  IR
+  ULTRASONIC
+  RFID
+  CAMERA
+}
+
+model ParkingSensor {
+  id                String              @id @default(uuid())
+  parkingId         String
+  parking           Parking             @relation(fields: [parkingId], references: [id])
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  name              String
+  description       String?
+  type              SensorParkingType
+  ParkingSensorData ParkingSensorData[]
+}
+
+enum SensorParkingType {
+  TEMPERATURE
+  HUMIDITY
+  LIGHT
+  PRESSURE
+  SOUND
+  VIBRATION
+  MOTION
+  GAS
+}
+
+model ParkingSensorData {
+  id              String        @id @default(uuid())
+  parkingSensorId String
+  parkingSensor   ParkingSensor @relation(fields: [parkingSensorId], references: [id])
+  data            String
+  createdAt       DateTime      @default(now())
+}
+
+model SensorsData {
+  id        String   @id @default(uuid())
+  sensorId  String
+  sensor    Sensors  @relation(fields: [sensorId], references: [id])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  data      String
+}
