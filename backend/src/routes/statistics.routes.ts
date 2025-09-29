@@ -1,5 +1,6 @@
 import { Router } from "express";
 import StatisticsController from "../controllers/statistics.controller";
+import { cacheSeconds } from "../middlewares/cache.middleware";
 
 const router = Router();
 
@@ -55,6 +56,6 @@ const router = Router();
  *                     parkingSensorsData:
  *                       type: integer
  */
-router.get("/", StatisticsController.getOverview);
+router.get("/", cacheSeconds(15), StatisticsController.getOverview);
 
 export default router;

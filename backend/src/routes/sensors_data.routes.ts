@@ -1,6 +1,7 @@
 import { Router } from "express";
 import SensorsDataController from "../controllers/sensors_data.controller";
 import { validateSensorDataExists } from "../middlewares/sensors_data.middleware";
+import { cacheSeconds } from "../middlewares/cache.middleware";
 
 const router = Router();
 
@@ -62,7 +63,7 @@ router.post("/", SensorsDataController.create);
  *               items:
  *                 $ref: '#/components/schemas/SensorsData'
  */
-router.get("/", SensorsDataController.getAll);
+router.get("/", cacheSeconds(600), SensorsDataController.getAll);
 
 /**
  * @swagger
