@@ -8,7 +8,7 @@ class ReservationController {
     const { error } = createReservationSchema.validate(req.body);
     if (error) return handleError(res, new Error(error.details[0].message), "Erro de validação", 400);
     try {
-      const reservation = await ReservationService.create(req.body);
+      const reservation = await ReservationService.create({ ...req.body, userId: req.user!.id });
       return res.status(201).json(reservation);
     } catch (err) {
       return handleError(res, err as Error, "Erro ao criar reserva.");
@@ -30,6 +30,15 @@ class ReservationController {
       return res.json(item);
     } catch (err) {
       return handleError(res, err as Error, "Erro ao carregar reserva.", 404);
+    }
+  }
+
+  async listMine(req: Request, res: Response) {
+    try {
+      const list = await ReservationService.listByUser(req.user!.id);
+      return res.json(list);
+    } catch (err) {
+      return handleError(res, err as Error, "Erro ao listar reservas do usuário.");
     }
   }
 

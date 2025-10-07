@@ -12,6 +12,9 @@ import sensorsDataRoutes from "./routes/sensors_data.routes"
 import statisticsRoutes from "./routes/statistics.routes"
 import cors from "cors";
 import reservationRoutes from "./routes/reservation.routes";
+import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
+import adminRoutes from "./routes/admin.routes";
 
 const app = express();
 const port = 4000;
@@ -38,6 +41,9 @@ app.use("/parking-sensor-data", parkingSensorDataRoutes)
 app.use("/sensors-data", sensorsDataRoutes)
 app.use("/statistics", statisticsRoutes)
 app.use("/reservations", reservationRoutes)
+app.use("/auth", authRoutes)
+app.use("/users", userRoutes)
+app.use("/admins", adminRoutes)
 
 if (process.env.NODE_ENV !== "test") {
   app.listen(port, () => {

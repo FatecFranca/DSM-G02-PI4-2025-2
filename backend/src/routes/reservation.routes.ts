@@ -1,5 +1,6 @@
 import { Router } from "express";
 import ReservationController from "../controllers/reservation.controller";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const router = Router();
  *     summary: Criar reserva para uma vaga
  *     tags: [Reservations]
  */
-router.post("/", ReservationController.create);
+router.post("/", authenticate, ReservationController.create);
 
 /**
  * @swagger
@@ -20,6 +21,15 @@ router.post("/", ReservationController.create);
  *     tags: [Reservations]
  */
 router.get("/", ReservationController.list);
+
+/**
+ * @swagger
+ * /reservations/me:
+ *   get:
+ *     summary: Listar reservas do usuário autenticado
+ *     tags: [Reservations]
+ */
+router.get("/me", authenticate, ReservationController.listMine);
 
 /**
  * @swagger

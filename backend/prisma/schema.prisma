@@ -9,6 +9,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  Reservation  Reservation[]
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
 model ContactMessage {
   id        String   @id @default(uuid())
   name      String
@@ -34,15 +53,15 @@ model Parking {
 }
 
 model ParkingSlot {
-  id          String    @id @default(uuid())
-  parkingId   String
-  parking     Parking   @relation(fields: [parkingId], references: [id])
-  isAvailable Boolean   @default(true)
-  isActive    Boolean   @default(true)
-  number      Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  Sensors     Sensors[]
+  id           String        @id @default(uuid())
+  parkingId    String
+  parking      Parking       @relation(fields: [parkingId], references: [id])
+  isAvailable  Boolean       @default(true)
+  isActive     Boolean       @default(true)
+  number       Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  Sensors      Sensors[]
   Reservations Reservation[]
 }
 
@@ -115,6 +134,8 @@ model Reservation {
   startTime     DateTime
   endTime       DateTime
   createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
 
   @@index([parkingSlotId, startTime, endTime])
 }

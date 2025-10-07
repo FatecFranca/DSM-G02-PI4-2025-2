@@ -9,6 +9,7 @@ export type CreateReservationInput = {
   date: string; // e.g., 2025-09-13 (local date string)
   startHour: string; // e.g., "06:00" (HH:mm)
   durationHours: number; // e.g., 1
+  userId: string;
 };
 
 function toUtc(dateStr: string, timeStr: string): Date {
@@ -19,7 +20,7 @@ function toUtc(dateStr: string, timeStr: string): Date {
 
 class ReservationService {
   async create(input: CreateReservationInput) {
-    const { parkingSlotId, vehiclePlate, date, startHour, durationHours } = input;
+    const { parkingSlotId, vehiclePlate, date, startHour, durationHours, userId } = input;
 
     const startTime = toUtc(date, startHour);
     const endTime = new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
@@ -47,7 +48,7 @@ class ReservationService {
     }
 
     const reservation = await prisma.reservation.create({
-      data: { parkingSlotId, vehiclePlate, startTime, endTime },
+      data: { parkingSlotId, vehiclePlate, startTime, endTime, userId },
     });
 
     // schedule availability toggling
@@ -59,6 +60,13 @@ class ReservationService {
   async list(params: { parkingSlotId?: string } = {}) {
     return prisma.reservation.findMany({
       where: { parkingSlotId: params.parkingSlotId },
+      orderBy: { startTime: "desc" },
+    });
+  }
+
+  async listByUser(userId: string) {
+    return prisma.reservation.findMany({
+      where: { userId },
       orderBy: { startTime: "desc" },
     });
   }
