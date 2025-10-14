@@ -56,9 +56,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="reserva"
+        name="reservas"
         options={{
-          title: 'Reservar',
+          title: 'Reservas',
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="calendar.badge.plus" color={color} />,
         }}
       />
@@ -77,10 +77,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="perfil"
+        name="sensores"
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
+          title: 'Sensores',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="camera.fill" color={color} />,
         }}
       />
     </Tabs>

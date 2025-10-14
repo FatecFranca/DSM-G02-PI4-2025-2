@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,12 +25,12 @@ interface LoginForm {
 }
 
 export default function LoginPage() {
+    const { login, isLoading } = useAuth();
     const [form, setForm] = useState<LoginForm>({
         email: '',
         password: ''
     });
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
 
     const updateForm = (field: keyof LoginForm, value: string) => {
         setForm(prev => ({ ...prev, [field]: value }));
@@ -41,14 +42,13 @@ export default function LoginPage() {
             return;
         }
 
-        setIsLoading(true);
+        const success = await login(form.email, form.password);
         
-        // Simular login
-        setTimeout(() => {
-            setIsLoading(false);
-            // Navegar para a tela principal
-            router.replace('/(tabs)');
-        }, 2000);
+        if (!success) {
+            Alert.alert('Erro', 'Email ou senha incorretos.');
+        }
+        // Se o login for bem-sucedido, o usuário será automaticamente redirecionado
+        // devido ao controle de navegação no _layout.tsx
     };
 
     const handleRegister = () => {
