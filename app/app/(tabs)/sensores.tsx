@@ -10,6 +10,8 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../contexts/AuthContext';
+import ApiService, { Parking } from '../../lib/api';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import CustomModal from '../../components/ui/CustomModal';
@@ -17,10 +19,6 @@ import FilterPicker from '../../components/ui/FilterPicker';
 import SearchInput from '../../components/ui/SearchInput';
 
 // Types
-type Parking = {
-    id: string;
-    name: string
-};
 
 type Sensor = {
     id: string;
@@ -60,108 +58,16 @@ type ParkingSensorData = {
     createdAt: string;
 };
 
-// Mock data
-const mockParkings: Parking[] = [
-    { id: "1", name: "Estacionamento Centro" },
-    { id: "2", name: "Estacionamento Shopping" },
-    { id: "3", name: "Estacionamento Universidade" },
-];
-
-const mockSensors: Sensor[] = [
-    {
-        id: "1",
-        name: "Sensor Vaga A1",
-        type: "IR",
-        description: "Sensor infravermelho para vaga A1",
-        parkingSlotId: "A1",
-        isActive: true,
-        createdAt: "2024-01-15T10:00:00Z",
-        updatedAt: "2024-01-20T14:30:00Z"
-    },
-    {
-        id: "2",
-        name: "Sensor Vaga B2",
-        type: "ULTRASONIC",
-        description: "Sensor ultrassônico para vaga B2",
-        parkingSlotId: "B2",
-        isActive: false,
-        createdAt: "2024-01-16T09:15:00Z",
-        updatedAt: "2024-01-19T16:45:00Z"
-    },
-    {
-        id: "3",
-        name: "Sensor Vaga C3",
-        type: "CAMERA",
-        description: "Sensor de câmera para vaga C3",
-        parkingSlotId: "C3",
-        isActive: true,
-        createdAt: "2024-01-17T11:30:00Z",
-        updatedAt: "2024-01-21T08:20:00Z"
-    }
-];
-
-const mockParkingSensors: ParkingSensor[] = [
-    {
-        id: "1",
-        name: "Sensor Entrada Principal",
-        type: "CAMERA",
-        description: "Sensor de câmera na entrada principal",
-        parkingId: "1",
-        isActive: true,
-        createdAt: "2024-01-10T08:00:00Z",
-        updatedAt: "2024-01-22T10:15:00Z"
-    },
-    {
-        id: "2",
-        name: "Sensor Contador de Vagas",
-        type: "COUNTER",
-        description: "Contador automático de vagas disponíveis",
-        parkingId: "2",
-        isActive: true,
-        createdAt: "2024-01-12T14:20:00Z",
-        updatedAt: "2024-01-21T09:30:00Z"
-    },
-    {
-        id: "3",
-        name: "Sensor Temperatura",
-        type: "TEMPERATURE",
-        description: "Monitoramento de temperatura ambiente",
-        parkingId: "3",
-        isActive: false,
-        createdAt: "2024-01-14T16:45:00Z",
-        updatedAt: "2024-01-20T12:00:00Z"
-    }
-];
-
-const mockSensorData: SensorsData[] = [
-    {
-        id: "1",
-        sensorId: "1",
-        data: "Vaga ocupada - veículo detectado",
-        createdAt: "2024-01-22T10:30:00Z"
-    },
-    {
-        id: "2",
-        sensorId: "1",
-        data: "Vaga liberada",
-        createdAt: "2024-01-22T10:25:00Z"
-    },
-    {
-        id: "3",
-        sensorId: "2",
-        data: "Sensor inativo - sem detecção",
-        createdAt: "2024-01-22T09:45:00Z"
-    }
-];
 
 export default function SensoresPage() {
+    
     // State for tabs
     const [tab, setTab] = useState<"sensors" | "parkingSensors">("sensors");
 
     // State for data
-    const [parkings, setParkings] = useState<Parking[]>(mockParkings);
-    const [sensors, setSensors] = useState<Sensor[]>(mockSensors);
-    const [parkingSensors, setParkingSensors] = useState<ParkingSensor[]>(mockParkingSensors);
+    const [parkings, setParkings] = useState<Parking[]>([]);
+    const [sensors, setSensors] = useState<Sensor[]>([]);
+    const [parkingSensors, setParkingSensors] = useState<ParkingSensor[]>([]);
 
     // Loading states
     const [sensorsLoading, setSensorsLoading] = useState(false);
@@ -184,17 +90,28 @@ export default function SensoresPage() {
 
     // Refresh function
     const refreshAll = async () => {
+  
         setSensorsLoading(true);
         setPsLoading(true);
         setSensorsError(null);
         setPsError(null);
 
         try {
-            // Simulate API calls with mock data
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setParkings(mockParkings);
-            setSensors(mockSensors);
-            setParkingSensors(mockParkingSensors);
+            const [parkingsResponse, sensorsResponse, parkingSensorsResponse] = await Promise.all([
+                ApiService.getParkings(),
+                ApiService.getSensors(),
+                ApiService.getParkingSensors()
+            ]);
+
+            if (parkingsResponse.data) {
+                setParkings(parkingsResponse.data);
+            }
+            if (sensorsResponse.data) {
+                setSensors(sensorsResponse.data);
+            }
+            if (parkingSensorsResponse.data) {
+                setParkingSensors(parkingSensorsResponse.data);
+            }
         } catch (e: any) {
             const msg = e?.message || "Erro ao carregar dados";
             setSensorsError(msg);
@@ -247,9 +164,13 @@ export default function SensoresPage() {
         setShowAllDetails(false);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 500));
-            setDetailData(mockSensorData);
+            if (tab === "sensors") {
+                const response = await ApiService.getSensorData(id);
+                setDetailData(response.data || []);
+            } else {
+                const response = await ApiService.getParkingSensorData(id);
+                setDetailData(response.data || []);
+            }
         } catch (e) {
             setDetailData([]);
         } finally {
@@ -292,16 +213,21 @@ export default function SensoresPage() {
                     { text: "Cancelar", style: "cancel" },
                     {
                         text: "Confirmar",
-                        onPress: () => {
-                            // Simulate API call
-                            if ("parkingSlotId" in item) {
-                                setSensors(prev => prev.map(s =>
-                                    s.id === item.id ? { ...s, isActive: !s.isActive } : s
-                                ));
-                            } else {
-                                setParkingSensors(prev => prev.map(s =>
-                                    s.id === item.id ? { ...s, isActive: !s.isActive } : s
-                                ));
+                        onPress: async () => {
+                            try {
+                                if ("parkingSlotId" in item) {
+                                    await ApiService.updateSensor(item.id, { isActive: !item.isActive });
+                                    setSensors(prev => prev.map(s =>
+                                        s.id === item.id ? { ...s, isActive: !s.isActive } : s
+                                    ));
+                                } else {
+                                    await ApiService.updateParkingSensor(item.id, { isActive: !item.isActive });
+                                    setParkingSensors(prev => prev.map(s =>
+                                        s.id === item.id ? { ...s, isActive: !s.isActive } : s
+                                    ));
+                                }
+                            } catch (e) {
+                                Alert.alert("Erro", "Falha ao atualizar status");
                             }
                         }
                     }
@@ -322,11 +248,17 @@ export default function SensoresPage() {
                 {
                     text: "Remover",
                     style: "destructive",
-                    onPress: () => {
-                        if ("parkingSlotId" in item) {
-                            setSensors(prev => prev.filter(s => s.id !== item.id));
-                        } else {
-                            setParkingSensors(prev => prev.filter(s => s.id !== item.id));
+                    onPress: async () => {
+                        try {
+                            if ("parkingSlotId" in item) {
+                                await ApiService.deleteSensor(item.id);
+                                setSensors(prev => prev.filter(s => s.id !== item.id));
+                            } else {
+                                await ApiService.deleteParkingSensor(item.id);
+                                setParkingSensors(prev => prev.filter(s => s.id !== item.id));
+                            }
+                        } catch (e) {
+                            Alert.alert("Erro", "Falha ao remover sensor");
                         }
                     }
                 }
@@ -982,5 +914,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6B7280',
         flex: 1,
+    },
+    authRequired: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    authRequiredTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    authRequiredText: {
+        fontSize: 16,
+        color: '#6B7280',
+        textAlign: 'center',
     },
 }); 

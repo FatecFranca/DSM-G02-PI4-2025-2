@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,78 +10,76 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ApiService, { Reservation } from '../../lib/api';
 import ReservationFilters from '../../components/reservations/ReservationFilters';
 import ReservationList from '../../components/reservations/ReservationList';
 import ReservationStats from '../../components/reservations/ReservationStats';
 
-interface Reservation {
-    id: string;
-    user: string;
-    vehicle: string;
-    spot: string;
-    startTime: string;
-    endTime: string;
-    status: 'active' | 'completed' | 'cancelled' | 'pending';
-    price: string;
-    createdAt: string;
-}
-
 export default function ReservasPage() {
     const [selectedFilter, setSelectedFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [reservations, setReservations] = useState<Reservation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Dados simulados de reservas
-    const reservations: Reservation[] = [
-        {
-            id: '1',
-            user: 'João Silva',
-            vehicle: 'ABC-1234',
-            spot: 'A01',
-            startTime: '2024-01-15T09:00:00Z',
-            endTime: '2024-01-15T17:00:00Z',
-            status: 'active',
-            price: 'R$ 40,00',
-            createdAt: '2024-01-15T08:30:00Z'
-        },
-        {
-            id: '2',
-            user: 'Maria Santos',
-            vehicle: 'XYZ-5678',
-            spot: 'B02',
-            startTime: '2024-01-14T14:00:00Z',
-            endTime: '2024-01-14T18:00:00Z',
-            status: 'completed',
-            price: 'R$ 20,00',
-            createdAt: '2024-01-14T13:30:00Z'
-        },
-        {
-            id: '3',
-            user: 'Pedro Costa',
-            vehicle: 'DEF-9012',
-            spot: 'C03',
-            startTime: '2024-01-16T10:00:00Z',
-            endTime: '2024-01-16T12:00:00Z',
-            status: 'pending',
-            price: 'R$ 10,00',
-            createdAt: '2024-01-15T20:00:00Z'
-        },
-        {
-            id: '4',
-            user: 'Ana Oliveira',
-            vehicle: 'GHI-3456',
-            spot: 'A05',
-            startTime: '2024-01-13T16:00:00Z',
-            endTime: '2024-01-13T18:00:00Z',
-            status: 'cancelled',
-            price: 'R$ 10,00',
-            createdAt: '2024-01-13T15:30:00Z'
+    const loadReservations = async () => {
+
+        try {
+            setError(null);
+            const response = await ApiService.getMyReservations();
+            if (response.data) {
+                setReservations(response.data);
+            }
+        } catch (e: any) {
+            setError('Erro ao carregar reservas');
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
+
+    useEffect(() => {
+        loadReservations();
+    }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadReservations();
+        setRefreshing(false);
+    };
+
+    // Transformar dados da API para o formato dos componentes
+    const transformedReservations = useMemo(() => {
+        return reservations.map(reservation => {
+            const now = new Date();
+            const startTime = new Date(reservation.startTime);
+            const endTime = new Date(reservation.endTime);
+
+            let status: 'active' | 'completed' | 'cancelled' | 'pending' = 'pending';
+            if (now < startTime) {
+                status = 'pending';
+            } else if (now >= startTime && now <= endTime) {
+                status = 'active';
+            } else {
+                status = 'completed';
+            }
+
+            return {
+                id: reservation.id,
+                user: reservation.user?.name || 'Usuário',
+                vehicle: reservation.vehiclePlate || 'N/A',
+                spot: reservation.parkingSlot?.number?.toString().padStart(2, '0') || 'N/A',
+                startTime: reservation.startTime,
+                endTime: reservation.endTime,
+                status,
+                price: 'R$ 0,00', // Preço não implementado ainda
+                createdAt: reservation.createdAt
+            };
+        });
+    }, [reservations]);
 
     const filteredReservations = useMemo(() => {
-        return reservations.filter(reservation => {
+        return transformedReservations.filter(reservation => {
             const matchesSearch = reservation.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 reservation.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 reservation.vehicle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,30 +89,51 @@ export default function ReservasPage() {
 
             return matchesSearch && matchesFilter;
         });
-    }, [reservations, searchTerm, selectedFilter]);
+    }, [transformedReservations, searchTerm, selectedFilter]);
 
-    const stats = {
-        total: reservations.length,
-        active: reservations.filter(r => r.status === 'active').length,
-        completed: reservations.filter(r => r.status === 'completed').length,
-        cancelled: reservations.filter(r => r.status === 'cancelled').length,
-        pending: reservations.filter(r => r.status === 'pending').length
-    };
+    const stats = useMemo(() => {
+        return {
+            total: transformedReservations.length,
+            active: transformedReservations.filter(r => r.status === 'active').length,
+            completed: transformedReservations.filter(r => r.status === 'completed').length,
+            cancelled: 0, // Não temos cancelamentos no modelo atual
+            pending: transformedReservations.filter(r => r.status === 'pending').length
+        };
+    }, [transformedReservations]);
 
-    const handleEdit = (reservation: Reservation) => {
+    const handleEdit = (reservation: any) => {
         Alert.alert('Editar Reserva', `Editar reserva ${reservation.id}`);
     };
 
-    const handleApprove = (reservation: Reservation) => {
+    const handleApprove = (reservation: any) => {
         Alert.alert('Aprovar Reserva', `Aprovar reserva ${reservation.id}`);
     };
 
-    const handleReject = (reservation: Reservation) => {
+    const handleReject = (reservation: any) => {
         Alert.alert('Rejeitar Reserva', `Rejeitar reserva ${reservation.id}`);
     };
 
-    const handleDelete = (reservation: Reservation) => {
-        Alert.alert('Excluir Reserva', `Excluir reserva ${reservation.id}`);
+    const handleDelete = async (reservation: any) => {
+        Alert.alert(
+            'Cancelar Reserva',
+            'Tem certeza que deseja cancelar esta reserva?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Confirmar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await ApiService.cancelReservation(reservation.id);
+                            await loadReservations();
+                            Alert.alert('Sucesso', 'Reserva cancelada com sucesso');
+                        } catch (e: any) {
+                            Alert.alert('Erro', 'Falha ao cancelar reserva');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const handleFilters = () => {
@@ -124,20 +144,47 @@ export default function ReservasPage() {
         Alert.alert('Nova Reserva', 'Redirecionando para criação de reserva...');
     };
 
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Carregando reservas...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+            >
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Gestão de Reservas</Text>
-                        <Text style={styles.subtitle}>Gerencie todas as reservas dos estacionamentos</Text>
+                        <Text style={styles.title}>Minhas Reservas</Text>
+                        <Text style={styles.subtitle}>Gerencie suas reservas de estacionamento</Text>
                     </View>
                     <TouchableOpacity style={styles.newReservationButton} onPress={handleNewReservation}>
                         <Ionicons name="add" size={20} color="#FFFFFF" />
                         <Text style={styles.newReservationText}>Nova Reserva</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Error Display */}
+                {error && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={loadReservations}>
+                            <Text style={styles.retryButtonText}>Tentar novamente</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Stats */}
                 <ReservationStats
@@ -208,6 +255,59 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     newReservationText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    authRequired: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    authRequiredTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    authRequiredText: {
+        fontSize: 16,
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#6B7280',
+    },
+    errorContainer: {
+        backgroundColor: '#FEF2F2',
+        margin: 20,
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FECACA',
+    },
+    errorText: {
+        fontSize: 14,
+        color: '#DC2626',
+        marginBottom: 12,
+    },
+    retryButton: {
+        backgroundColor: '#DC2626',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    retryButtonText: {
         color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',

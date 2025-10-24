@@ -34,8 +34,13 @@ class AuthService {
   }
 
   async login(input: LoginInput) {
-    const repo = input.role === "user" ? prisma.user : prisma.admin;
-    const actor = await repo.findUnique({ where: { email: input.email } });
+    let actor;
+    if (input.role === "user") {
+      actor = await prisma.user.findUnique({ where: { email: input.email } });
+    } else {
+      actor = await prisma.admin.findUnique({ where: { email: input.email } });
+    }
+    
     if (!actor) throw new Error("Credenciais inválidas");
     const ok = await bcrypt.compare(input.password, (actor as any).passwordHash);
     if (!ok) throw new Error("Credenciais inválidas");
@@ -45,6 +50,7 @@ class AuthService {
 }
 
 export default new AuthService();
+
 
 
 

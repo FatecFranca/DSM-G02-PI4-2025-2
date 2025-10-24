@@ -22,7 +22,8 @@ const MAPPING = {
   'person.fill': 'person',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-  'camera.fill': 'camera',  
+  'camera.fill': 'camera',    
+  'doc.text': 'description',  
 } as IconMapping;
 
 /**

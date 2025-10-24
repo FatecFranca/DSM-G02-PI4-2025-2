@@ -21,7 +21,7 @@ export default function FilterPicker({ value, onValueChange, options, placeholde
         onPress={() => setIsVisible(true)}
         activeOpacity={0.7}
       >
-        <Text style={styles.text}>
+        <Text style={styles.text} numberOfLines={1}>
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
         <Ionicons name="chevron-down" size={20} color="#6B7280" />
@@ -83,10 +83,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    minWidth: 120,
+    flex: 1,
+    minWidth: 140,
   },
   text: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#1F2937',
     flex: 1,
   },

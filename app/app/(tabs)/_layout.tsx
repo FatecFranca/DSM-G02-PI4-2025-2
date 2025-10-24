@@ -63,13 +63,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="minhas-reservas"
-        options={{
-          title: 'Minhas',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="calendar" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="explore"
         options={{
           title: 'Explorar',
@@ -81,6 +74,13 @@ export default function TabLayout() {
         options={{
           title: 'Sensores',
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="camera.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="relatorios"
+        options={{
+          title: 'Relatórios',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text" color={color} />,
         }}
       />
     </Tabs>

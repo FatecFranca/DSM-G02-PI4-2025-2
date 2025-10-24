@@ -1,31 +1,28 @@
 "use client"
 
-import {
-    Car,
-    Users,
-    CreditCard,
-    TrendingUp,
-    MapPin,
-    Calendar,
-    Clock,
-    AlertCircle,
-    BarChart3,
-    Settings
-} from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import api from "@/lib/api"
-import ParkingSpot, { SpotStatus } from "@/components/parking/ParkingSpot"
 import BarChart from "@/components/charts/BarChart"
-import PieChart from "@/components/charts/PieChart"
 import LineChart from "@/components/charts/LineChart"
+import PieChart from "@/components/charts/PieChart"
 import StatisticsCards from "@/components/charts/StatisticsCards"
+import { SpotStatus } from "@/components/parking/ParkingSpot"
+import api from "@/lib/api"
 import {
-    calculateStatistics,
     calculateOccupancyByPeriod,
     calculateParkingStats,
-    calculateTrends,
-    SlotData
+    calculateStatistics,
+    calculateTrends
 } from "@/lib/statistics"
+import {
+    AlertCircle,
+    BarChart3,
+    Calendar,
+    Car,
+    CreditCard,
+    MapPin,
+    Settings,
+    Users
+} from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 
 type StatisticsResponse = {
     parkings: { total: number; active: number }

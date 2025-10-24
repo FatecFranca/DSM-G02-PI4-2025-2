@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
     RefreshControl,
     ScrollView,
@@ -10,64 +9,80 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ApiService, { Parking, ParkingSlot } from '../../lib/api';
 import ParkingSpot, { SpotStatus } from '../../components/parking/ParkingSpot';
-import Button from '../../components/ui/Button';
 import FilterPicker from '../../components/ui/FilterPicker';
 import SearchInput from '../../components/ui/SearchInput';
 import StatCard from '../../components/ui/StatCard';
 
-const initialSpots: { id: string; status: SpotStatus; sector: string }[] = [
-    { id: "A01", status: "livre", sector: "A" },
-    { id: "A02", status: "ocupada", sector: "A" },
-    { id: "A03", status: "reservada", sector: "A" },
-    { id: "A04", status: "livre", sector: "A" },
-    { id: "A05", status: "ocupada", sector: "A" },
-    { id: "A06", status: "manutencao", sector: "A" },
-    { id: "B01", status: "livre", sector: "B" },
-    { id: "B02", status: "ocupada", sector: "B" },
-    { id: "B03", status: "manutencao", sector: "B" },
-    { id: "B04", status: "livre", sector: "B" },
-    { id: "B05", status: "reservada", sector: "B" },
-    { id: "B06", status: "ocupada", sector: "B" },
-];
+function mapStatus(slot: ParkingSlot): SpotStatus {
+    if (!slot.isActive) return "manutencao";
+    return slot.isAvailable ? "livre" : "ocupada";
+}
 
 export default function ParkingSpotsPage() {
-    const [spots, setSpots] = useState(initialSpots);
-    const [filter, setFilter] = useState<SpotStatus | "todas">("todas");
-    const [sector, setSector] = useState<"A" | "B" | "todos">("todos");
-    const [searchTerm, setSearchTerm] = useState("");
+    const [parkings, setParkings] = useState<Parking[]>([]);
+    const [slots, setSlots] = useState<ParkingSlot[]>([]);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    const [filter, setFilter] = useState<SpotStatus | "todas">("todas");
+    const [parkingFilter, setParkingFilter] = useState<string>("todos");
+    const [searchTerm, setSearchTerm] = useState("");
 
-    const filtered = useMemo(() => {
-        return spots.filter((s) =>
-            (filter === "todas" ? true : s.status === filter) &&
-            (sector === "todos" ? true : s.sector === sector) &&
-            (searchTerm === "" ? true : s.id.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-    }, [spots, filter, sector, searchTerm]);
+    const loadData = async () => {
+        try {
+            setError(null);
+            const [parkingsResponse, slotsResponse] = await Promise.all([
+                ApiService.getParkings(),
+                ApiService.getParkingSlots()
+            ]);
 
-    const counts = useMemo(() => {
-        return {
-            total: spots.length,
-            livre: spots.filter((s) => s.status === "livre").length,
-            ocupada: spots.filter((s) => s.status === "ocupada").length,
-            reservada: spots.filter((s) => s.status === "reservada").length,
-            manutencao: spots.filter((s) => s.status === "manutencao").length,
-        };
-    }, [spots]);
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        // Simulate API call
-        setTimeout(() => {
-            setSpots([...initialSpots]);
-            setRefreshing(false);
-        }, 1000);
+            console.log(parkingsResponse.data);
+            console.log(slotsResponse.data);
+            if (parkingsResponse.data) {
+                setParkings(parkingsResponse.data);
+            }
+            if (slotsResponse.data) {
+                setSlots(slotsResponse.data);
+            }
+        } catch (err) {
+            setError('Erro ao carregar dados');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const addSpot = () => {
-        // ir para a tela de reserva
-        router.push("/reserva");
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const filtered = useMemo(() => {
+        return slots.filter((slot) => {
+            const status = mapStatus(slot);
+            const statusOk = filter === "todas" ? true : status === filter;
+            const parkingOk = parkingFilter === "todos" ? true : slot.parkingId === parkingFilter;
+            const searchOk = searchTerm === "" ? true : `${slot.number}`.toLowerCase().includes(searchTerm.toLowerCase());
+            return statusOk && parkingOk && searchOk;
+        });
+    }, [slots, filter, parkingFilter, searchTerm]);
+
+    const counts = useMemo(() => {
+        const allStatuses = slots.map(mapStatus);
+        return {
+            total: slots.length,
+            livre: allStatuses.filter((s) => s === "livre").length,
+            ocupada: allStatuses.filter((s) => s === "ocupada").length,
+            reservada: 0, // No reservations in current model
+            manutencao: allStatuses.filter((s) => s === "manutencao").length,
+        };
+    }, [slots]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadData();
+        setRefreshing(false);
     };
 
     const statusOptions = [
@@ -78,10 +93,9 @@ export default function ParkingSpotsPage() {
         { label: "Manutenção", value: "manutencao" },
     ];
 
-    const sectorOptions = [
-        { label: "Todos Setores", value: "todos" },
-        { label: "Setor A", value: "A" },
-        { label: "Setor B", value: "B" },
+    const parkingOptions = [
+        { label: "Todos os Estacionamentos", value: "todos" },
+        ...parkings.map(p => ({ label: p.name, value: p.id }))
     ];
 
     const legendItems = [
@@ -90,6 +104,16 @@ export default function ParkingSpotsPage() {
         { label: "Reservada", color: "#EAB308" },
         { label: "Manutenção", color: "#9CA3AF" },
     ];
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Carregando vagas...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -148,19 +172,23 @@ export default function ParkingSpotsPage() {
                     />
 
                     <View style={styles.filtersRow}>
-                        <FilterPicker
-                            value={filter}
-                            onValueChange={(value) => setFilter(value as any)}
-                            options={statusOptions}
-                            placeholder="Status"
-                        />
+                        <View style={styles.filterWrapper}>
+                            <FilterPicker
+                                value={filter}
+                                onValueChange={(value) => setFilter(value as any)}
+                                options={statusOptions}
+                                placeholder="Status"
+                            />
+                        </View>
 
-                        <FilterPicker
-                            value={sector}
-                            onValueChange={(value) => setSector(value as any)}
-                            options={sectorOptions}
-                            placeholder="Setor"
-                        />
+                        <View style={styles.filterWrapper}>
+                            <FilterPicker
+                                value={parkingFilter}
+                                onValueChange={(value) => setParkingFilter(value as any)}
+                                options={parkingOptions}
+                                placeholder="Estacionamento"
+                            />
+                        </View>
                     </View>
 
                     <View style={styles.actionButtons}>
@@ -171,17 +199,23 @@ export default function ParkingSpotsPage() {
                         >
                             <Ionicons name="refresh" size={20} color="#6B7280" />
                         </TouchableOpacity>
-
-                        <Button variant="primary" size="sm" onPress={addSpot}>
-                            <Ionicons name="add" size={16} color="#FFFFFF" />
-                            <Text style={styles.buttonText}>Adicionar</Text>
-                        </Button>
                     </View>
                 </View>
+
+                {/* Error Display */}
+                {error && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+                            <Text style={styles.retryButtonText}>Tentar novamente</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Parking Grid */}
                 <View style={styles.parkingContainer}>
                     <View style={styles.parkingHeader}>
+                        <Text style={styles.parkingTitle}>Vagas ({filtered.length}/{slots.length})</Text>
                         <View style={styles.legend}>
                             {legendItems.map((item, index) => (
                                 <View key={index} style={styles.legendItem}>
@@ -192,38 +226,47 @@ export default function ParkingSpotsPage() {
                         </View>
                     </View>
 
-                    {/* Setor A */}
-                    <View style={styles.sectorContainer}>
-                        <Text style={styles.sectorTitle}>Setor A</Text>
-                        <View style={styles.spotsGrid}>
-                            {filtered.filter((s) => s.sector === "A").map((s) => (
-                                <View key={s.id} style={styles.spotWrapper}>
-                                    <ParkingSpot id={s.id} status={s.status} />
-                                </View>
-                            ))}
-                        </View>
-                    </View>
+                    {(() => {
+                        const byParking = new Map<string, ParkingSlot[]>();
+                        filtered.forEach((slot) => {
+                            const arr = byParking.get(slot.parkingId) || [];
+                            arr.push(slot);
+                            byParking.set(slot.parkingId, arr);
+                        });
+                        const groups = Array.from(byParking.entries());
 
-                    {/* Setor B */}
-                    <View style={styles.sectorContainer}>
-                        <Text style={styles.sectorTitle}>Setor B</Text>
-                        <View style={styles.spotsGrid}>
-                            {filtered.filter((s) => s.sector === "B").map((s) => (
-                                <View key={s.id} style={styles.spotWrapper}>
-                                    <ParkingSpot id={s.id} status={s.status} />
+                        if (groups.length === 0) {
+                            return (
+                                <View style={styles.emptyState}>
+                                    <Ionicons name="search-outline" size={48} color="#9CA3AF" />
+                                    <Text style={styles.emptyText}>
+                                        Nenhuma vaga encontrada com os filtros aplicados.
+                                    </Text>
                                 </View>
-                            ))}
-                        </View>
-                    </View>
+                            );
+                        }
 
-                    {filtered.length === 0 && (
-                        <View style={styles.emptyState}>
-                            <Ionicons name="search-outline" size={48} color="#9CA3AF" />
-                            <Text style={styles.emptyText}>
-                                Nenhuma vaga encontrada com os filtros aplicados.
-                            </Text>
-                        </View>
-                    )}
+                        return groups.map(([parkingId, slotsGroup]) => {
+                            const parkingName = parkings.find((p) => p.id === parkingId)?.name || parkingId;
+                            return (
+                                <View key={parkingId} style={styles.sectorContainer}>
+                                    <Text style={styles.sectorTitle}>{parkingName}</Text>
+                                    <View style={styles.spotsGrid}>
+                                        {slotsGroup
+                                            .sort((a, b) => a.number - b.number)
+                                            .map((slot) => (
+                                                <View key={slot.id} style={styles.spotWrapper}>
+                                                    <ParkingSpot 
+                                                        id={String(slot.number).padStart(2, '0')} 
+                                                        status={mapStatus(slot)} 
+                                                    />
+                                                </View>
+                                            ))}
+                                    </View>
+                                </View>
+                            );
+                        });
+                    })()}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -255,8 +298,9 @@ const styles = StyleSheet.create({
     statsContainer: {
         flexDirection: 'row',
         paddingHorizontal: 20,
-        gap: 8,
+        gap: 6,
         marginBottom: 20,
+        flexWrap: 'wrap',
     },
     toolbar: {
         backgroundColor: '#FFFFFF',
@@ -275,8 +319,11 @@ const styles = StyleSheet.create({
     },
     filtersRow: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 8,
         marginTop: 12,
+    },
+    filterWrapper: {
+        flex: 1,
     },
     actionButtons: {
         flexDirection: 'row',
@@ -312,23 +359,29 @@ const styles = StyleSheet.create({
     parkingHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         marginBottom: 20,
+        flexWrap: 'wrap',
     },
     parkingTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#1F2937',
+        flex: 1,
+        marginRight: 8,
     },
     legend: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 8,
+        flex: 1,
+        justifyContent: 'flex-end',
     },
     legendItem: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
+        marginBottom: 4,
     },
     legendDot: {
         width: 12,
@@ -336,8 +389,9 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     legendText: {
-        fontSize: 12,
+        fontSize: 10,
         color: '#6B7280',
+        flexShrink: 1,
     },
     sectorContainer: {
         marginBottom: 24,
@@ -366,5 +420,58 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         textAlign: 'center',
         marginTop: 12,
+    },
+    authRequired: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    authRequiredTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    authRequiredText: {
+        fontSize: 16,
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#6B7280',
+    },
+    errorContainer: {
+        backgroundColor: '#FEF2F2',
+        margin: 20,
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FECACA',
+    },
+    errorText: {
+        fontSize: 14,
+        color: '#DC2626',
+        marginBottom: 12,
+    },
+    retryButton: {
+        backgroundColor: '#DC2626',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    retryButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

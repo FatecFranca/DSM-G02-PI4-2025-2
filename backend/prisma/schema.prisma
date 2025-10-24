@@ -134,8 +134,8 @@ model Reservation {
   startTime     DateTime
   endTime       DateTime
   createdAt     DateTime    @default(now())
-  user          User        @relation(fields: [userId], references: [id])
-  userId        String
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
 
   @@index([parkingSlotId, startTime, endTime])
 }

@@ -54,11 +54,6 @@ export default function AdminLayout({
             icon: Wrench
         },
         {
-            name: "Pagamentos",
-            href: "/admin/pagamentos",
-            icon: CreditCard
-        },
-        {
             name: "Configurações",
             href: "/admin/configuracoes",
             icon: Settings

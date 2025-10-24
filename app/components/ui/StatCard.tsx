@@ -20,20 +20,22 @@ export default function StatCard({ label, value, color, bgColor }: StatCardProps
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 80,
+    minHeight: 70,
+    minWidth: 60,
   },
   value: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   label: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     opacity: 0.8,
+    textAlign: 'center',
   },
 });
