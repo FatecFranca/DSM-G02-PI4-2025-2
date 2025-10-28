@@ -20,7 +20,7 @@ router.post("/", authenticate, ReservationController.create);
  *     summary: Listar reservas
  *     tags: [Reservations]
  */
-router.get("/", ReservationController.list);
+router.get("/", authenticate, ReservationController.list);
 
 /**
  * @swagger
@@ -43,11 +43,20 @@ router.get("/:id", ReservationController.getById);
 /**
  * @swagger
  * /reservations/{id}:
+ *   put:
+ *     summary: Atualizar reserva
+ *     tags: [Reservations]
+ */
+router.put("/:id", authenticate, ReservationController.update);
+
+/**
+ * @swagger
+ * /reservations/{id}:
  *   delete:
  *     summary: Cancelar reserva
  *     tags: [Reservations]
  */
-router.delete("/:id", ReservationController.cancel);
+router.delete("/:id", authenticate, ReservationController.cancel);
 
 export default router;
 

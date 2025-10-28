@@ -1,23 +1,21 @@
 "use client"
 
+import { useAuth } from "@/context/AuthContext"
 import {
     BarChart3,
     Calendar,
     Car,
-    CreditCard,
     Home,
     LogOut,
+    Mail,
     MapPin,
     Menu,
-    Mail,
-    Settings,
-    X,
-    Book,
-    Wrench
+    Wrench,
+    X
 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 
 export default function AdminLayout({
     children,
@@ -26,6 +24,8 @@ export default function AdminLayout({
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const pathname = usePathname()
+    const router = useRouter()
+    const { user, logout, isLoading } = useAuth()
 
     const navigation = [
         {
@@ -52,18 +52,43 @@ export default function AdminLayout({
             name: "Sensores",
             href: "/admin/sensores  ",
             icon: Wrench
-        },
-        {
-            name: "Configurações",
-            href: "/admin/configuracoes",
-            icon: Settings
-        },
+        },  
         {
             name: "Contato",
             href: "/admin/contato",
             icon: Mail
         }
     ]
+
+    const handleLogout = () => {
+        logout()
+        router.push("/login")
+    }
+
+    // Verificar se o usuário está autenticado e é admin
+    useEffect(() => {
+        if (!user) {
+            router.push("/login")
+            return
+        }
+        
+        if (user.role !== "admin") {
+            router.push("/")
+            return
+        }
+    }, [user, router])
+
+    // Mostrar loading enquanto verifica autenticação
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Carregando...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -117,7 +142,10 @@ export default function AdminLayout({
 
                     {/* Logout section */}
                     <div className="mt-8 pt-6 border-t border-gray-200">
-                        <button className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors">
+                        <button 
+                            onClick={handleLogout}
+                            className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        >
                             <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                             Sair
                         </button>
@@ -139,10 +167,7 @@ export default function AdminLayout({
 
                         <div className="flex items-center space-x-4">
                             <div className="text-sm text-gray-600">
-                                Olá, <span className="font-medium text-gray-900">Administrador</span>
-                            </div>
-                            <div className="w-8 h-8 bg-gray-200 rounded-full">
-                                <img src="https://avatars.githubusercontent.com/u/67373880?v=4" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                                Olá, <span className="font-medium text-gray-900">{user?.name || "Administrador"}</span>
                             </div>
                         </div>
                     </div>

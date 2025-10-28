@@ -1,12 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import Header from "@/components/layout/ClientHeader"
 import Footer from "@/components/layout/Footer"
 import Button from "@/components/ui/Button"
 import ParkingSpot, { SpotStatus } from "@/components/parking/ParkingSpot"
 import { Calendar, Clock, MapPin, Car, User, CreditCard, CheckCircle, RefreshCcw } from "lucide-react"
 import api from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
 
 type Parking = { id: string; name: string }
 type ParkingSlot = {
@@ -38,6 +40,8 @@ function generateHourlyTimes(startHour = 6, endHour = 22) {
 }
 
 export default function ReservasPage() {
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
   const [parkings, setParkings] = useState<Parking[]>([])
   const [slots, setSlots] = useState<ParkingSlot[]>([])
   const [loading, setLoading] = useState(false)
@@ -46,8 +50,8 @@ export default function ReservasPage() {
   const [date, setDate] = useState<string>("")
   const [startTime, setStartTime] = useState<string>("")
   const [duration, setDuration] = useState<number>(1)
-  const [name, setName] = useState<string>("")
-  const [email, setEmail] = useState<string>("")
+  const [name, setName] = useState<string>(user?.name || "")
+  const [email, setEmail] = useState<string>(user?.email || "")
   const [plate, setPlate] = useState<string>("")
   const [payment, setPayment] = useState<"pix" | "cartao">("pix")
   const [submitted, setSubmitted] = useState(false)
@@ -150,6 +154,34 @@ export default function ReservasPage() {
   }
 
   useEffect(() => { refresh() }, [])
+  
+  // Verificar autenticação
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/login")
+      return
+    }
+  }, [user, isLoading, router])
+
+  // Atualizar campos quando o usuário for carregado
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "")
+      setEmail(user.email || "")
+    }
+  }, [user])
+
+  // Mostrar loading enquanto verifica autenticação
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen text-gray-900">
@@ -161,9 +193,14 @@ export default function ReservasPage() {
           <div className="w-20 h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Calendar className="w-10 h-10 text-primary-600" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Reservar Estacionamento</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            {user ? `Olá, ${user.name}!` : "Reservar Estacionamento"}
+          </h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Primeiro preencha data, duração, horário e seus dados. Depois, selecione uma vaga disponível.
+            {user 
+              ? "Preencha data, duração, horário e selecione uma vaga disponível para sua reserva."
+              : "Primeiro preencha data, duração, horário e seus dados. Depois, selecione uma vaga disponível."
+            }
           </p>
         </div>
 
@@ -283,8 +320,9 @@ export default function ReservasPage() {
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Seu nome"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${user ? 'bg-gray-50' : ''}`}
                           required
+                          readOnly={!!user}
                         />
                       </div>
                     </div>
@@ -296,8 +334,9 @@ export default function ReservasPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="seu@email.com"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${user ? 'bg-gray-50' : ''}`}
                         required
+                        readOnly={!!user}
                       />
                     </div>
 

@@ -5,7 +5,9 @@ import Footer from "@/components/layout/Footer"
 import { BarChart2, Calendar, Car, MapPin } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import api from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
 
 type Reservation = {
     id: string
@@ -29,16 +31,19 @@ type ParkingSlot = {
 }
 
 export default function ClientDashboardPage() {
+    const { user, isLoading } = useAuth()
+    const router = useRouter()
     const [reservations, setReservations] = useState<Reservation[]>([])
     const [slots, setSlots] = useState<ParkingSlot[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const refresh = () => {
+        if (!user) return
         setLoading(true)
         setError(null)
         Promise.all([
-            api.get<Reservation[]>("/reservations", { cache: "no-store" }),
+            api.get<Reservation[]>("/reservations/me", { cache: "no-store" }),
             api.get<ParkingSlot[]>("/parking-slots", { cache: "no-store" }),
         ])
             .then(([rs, sl]) => { setReservations(Array.isArray(rs) ? rs : []); setSlots(Array.isArray(sl) ? sl : []) })
@@ -46,7 +51,19 @@ export default function ClientDashboardPage() {
             .finally(() => setLoading(false))
     }
 
-    useEffect(() => { refresh() }, [])
+    // Verificar autenticação
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.push("/login")
+            return
+        }
+    }, [user, isLoading, router])
+
+    useEffect(() => { 
+        if (user) {
+            refresh() 
+        }
+    }, [user])
 
     const now = new Date()
     const activeReservations = useMemo(() => {
@@ -82,6 +99,18 @@ export default function ClientDashboardPage() {
         withStart.sort((a, b) => a.start.getTime() - b.start.getTime())
         return withStart[0]?.r as Reservation | undefined
     }, [activeReservations])
+
+    // Mostrar loading enquanto verifica autenticação
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Carregando...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen text-gray-900">
@@ -122,7 +151,6 @@ export default function ClientDashboardPage() {
                         <div className="flex flex-wrap gap-3">
                             <Link href="/reservas" className="px-4 py-2 rounded-lg bg-primary-600 text-white">Nova reserva</Link>
                             <Link href="/cliente/reservas" className="px-4 py-2 rounded-lg border border-gray-300">Minhas reservas</Link>
-                            <Link href="/cliente/perfil" className="px-4 py-2 rounded-lg border border-gray-300">Meu perfil</Link>
                         </div>
                     </div>
 

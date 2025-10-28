@@ -6,30 +6,55 @@ import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import { useAuth } from "@/context/AuthContext"
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const router = useRouter()
-    const { login } = useAuth()
+    const { register } = useAuth()
     const [perfil, setPerfil] = useState<"cliente" | "admin">("cliente")
+    const [nome, setNome] = useState("")
     const [email, setEmail] = useState("")
     const [senha, setSenha] = useState("")
+    const [confirmarSenha, setConfirmarSenha] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState("")
+    const [success, setSuccess] = useState("")
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setIsSubmitting(true)
         setError("")
+        setSuccess("")
+
+        // Validações
+        if (senha !== confirmarSenha) {
+            setError("As senhas não coincidem.")
+            setIsSubmitting(false)
+            return
+        }
+
+        if (senha.length < 8) {
+            setError("A senha deve ter pelo menos 8 caracteres.")
+            setIsSubmitting(false)
+            return
+        }
 
         try {
             const role = perfil === "admin" ? "admin" : "user"
-            await login(email, senha, role)
+            await register(nome, email, senha, role)
             
-            // Redirecionar baseado no perfil
-            const destino = perfil === "admin" ? "/admin" : "/reservas"
-            router.push(destino)
-        } catch (err) {
-            setError("Credenciais inválidas. Verifique seu email e senha.")
-            console.error("Erro no login:", err)
+            setSuccess("Conta criada com sucesso! Redirecionando para o login...")
+            
+            // Redirecionar para login após 2 segundos
+            setTimeout(() => {
+                router.push("/login")
+            }, 2000)
+        } catch (err: any) {
+            const errorMessage = err.message.includes("400") 
+                ? "Dados inválidos. Verifique as informações fornecidas."
+                : err.message.includes("409")
+                ? "Este email já está em uso."
+                : "Erro ao criar conta. Tente novamente."
+            setError(errorMessage)
+            console.error("Erro no registro:", err)
         } finally {
             setIsSubmitting(false)
         }
@@ -42,8 +67,8 @@ export default function LoginPage() {
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="max-w-md mx-auto">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl md:text-4xl font-bold">Acessar conta</h1>
-                        <p className="text-gray-600 mt-2">Escolha o tipo de acesso e informe suas credenciais.</p>
+                        <h1 className="text-3xl md:text-4xl font-bold">Criar conta</h1>
+                        <p className="text-gray-600 mt-2">Preencha os dados abaixo para criar sua conta.</p>
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
@@ -58,15 +83,6 @@ export default function LoginPage() {
                             >
                                 Cliente
                             </button>
-                            <button
-                                type="button"
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                                    perfil === "admin" ? "bg-white shadow text-gray-900" : "text-gray-600 hover:text-gray-800"
-                                }`}
-                                onClick={() => setPerfil("admin")}
-                            >
-                                Administrador
-                            </button>
                         </div>
 
                         {/* Formulário */}
@@ -76,6 +92,28 @@ export default function LoginPage() {
                                     {error}
                                 </div>
                             )}
+
+                            {success && (
+                                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                                    {success}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="nome">
+                                    Nome completo
+                                </label>
+                                <input
+                                    id="nome"
+                                    type="text"
+                                    value={nome}
+                                    onChange={(e) => setNome(e.target.value)}
+                                    required
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    placeholder="Seu nome completo"
+                                />
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
                                     Email
@@ -102,7 +140,22 @@ export default function LoginPage() {
                                     onChange={(e) => setSenha(e.target.value)}
                                     required
                                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                    placeholder="••••••••"
+                                    placeholder="Mínimo 8 caracteres"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="confirmarSenha">
+                                    Confirmar senha
+                                </label>
+                                <input
+                                    id="confirmarSenha"
+                                    type="password"
+                                    value={confirmarSenha}
+                                    onChange={(e) => setConfirmarSenha(e.target.value)}
+                                    required
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    placeholder="Digite a senha novamente"
                                 />
                             </div>
 
@@ -111,17 +164,17 @@ export default function LoginPage() {
                                 disabled={isSubmitting}
                                 className="w-full inline-flex items-center justify-center rounded-lg bg-primary-600 text-white font-semibold py-2.5 px-4 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
                             >
-                                {isSubmitting ? "Entrando..." : `Logar como ${perfil === "admin" ? "administrador" : "cliente"}`}
+                                {isSubmitting ? "Criando conta..." : `Criar conta como ${perfil === "admin" ? "administrador" : "cliente"}`}
                             </button>
 
                             <div className="text-center">
                                 <p className="text-sm text-gray-600">
-                                    Não tem uma conta?{" "}
+                                    Já tem uma conta?{" "}
                                     <a 
-                                        href="/register" 
+                                        href="/login" 
                                         className="text-primary-600 hover:text-primary-700 font-medium"
                                     >
-                                        Criar conta
+                                        Fazer login
                                     </a>
                                 </p>
                             </div>
@@ -134,5 +187,3 @@ export default function LoginPage() {
         </div>
     )
 }
-
-

@@ -42,11 +42,22 @@ class ReservationController {
     }
   }
 
+  async update(req: Request, res: Response) {
+    const { error } = createReservationSchema.validate(req.body);
+    if (error) return handleError(res, new Error(error.details[0].message), "Erro de validação", 400);
+    try {
+      const reservation = await ReservationService.update(req.params.id, { ...req.body, userId: req.user!.id });
+      return res.json(reservation);
+    } catch (err) {
+      return handleError(res, err as Error, "Erro ao atualizar reserva.");
+    }
+  }
+
   async cancel(req: Request, res: Response) {
     const { error } = cancelReservationSchema.validate(req.params);
     if (error) return handleError(res, new Error(error.details[0].message), "Erro de validação", 400);
     try {
-      const result = await ReservationService.cancel(req.params.id);
+      const result = await ReservationService.cancel(req.params.id, req.user!.id);
       return res.json(result);
     } catch (err) {
       return handleError(res, err as Error, "Erro ao cancelar reserva.");

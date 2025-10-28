@@ -77,9 +77,69 @@ class ReservationService {
     return resv;
   }
 
-  async cancel(id: string) {
-    // simple delete cancel
-    await this.getById(id);
+  async update(id: string, input: CreateReservationInput) {
+    const { parkingSlotId, vehiclePlate, date, startHour, durationHours, userId } = input;
+
+    // Verificar se a reserva existe e pertence ao usuário
+    const existingReservation = await prisma.reservation.findUnique({ 
+      where: { id },
+      include: { parkingSlot: true }
+    });
+    
+    if (!existingReservation) {
+      throw new Error("Reserva não encontrada.");
+    }
+    
+    if (existingReservation.userId !== userId) {
+      throw new Error("Você não tem permissão para editar esta reserva.");
+    }
+
+    const startTime = toUtc(date, startHour);
+    const endTime = new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
+
+    if (endTime <= startTime) {
+      throw new Error("O término deve ser maior que o início.");
+    }
+
+    const slot = await prisma.parkingSlot.findUnique({ where: { id: parkingSlotId } });
+    if (!slot || !slot.isActive) {
+      throw new Error("Vaga inexistente ou inativa.");
+    }
+
+    // Check overlapping reservations for the same slot (excluding current reservation)
+    const overlap = await prisma.reservation.findFirst({
+      where: {
+        parkingSlotId,
+        id: { not: id },
+        OR: [
+          { startTime: { lt: endTime }, endTime: { gt: startTime } },
+        ],
+      },
+    });
+    if (overlap) {
+      throw new Error("Já existe uma reserva nesse intervalo.");
+    }
+
+    const reservation = await prisma.reservation.update({
+      where: { id },
+      data: { parkingSlotId, vehiclePlate, startTime, endTime },
+    });
+
+    return reservation;
+  }
+
+  async cancel(id: string, userId: string) {
+    // Verificar se a reserva existe e pertence ao usuário
+    const reservation = await prisma.reservation.findUnique({ where: { id } });
+    
+    if (!reservation) {
+      throw new Error("Reserva não encontrada.");
+    }
+    
+    if (reservation.userId !== userId) {
+      throw new Error("Você não tem permissão para cancelar esta reserva.");
+    }
+
     await prisma.reservation.delete({ where: { id } });
     return { id, cancelled: true };
   }

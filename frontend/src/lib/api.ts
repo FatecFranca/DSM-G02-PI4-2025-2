@@ -15,10 +15,18 @@ export async function apiFetch<TResponse, TBody = unknown>(path: string, options
 
     const { method = "GET", headers = {}, body, cache, next } = options;
 
+    // Buscar token do localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
     const finalHeaders: Record<string, string> = {
         "Content-Type": "application/json",
         ...headers,
     };
+
+    // Adicionar token de autenticação se disponível
+    if (token) {
+        finalHeaders.Authorization = `Bearer ${token}`;
+    }
 
     const response = await fetch(url, {
         method,
