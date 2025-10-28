@@ -58,6 +58,15 @@ router.put("/:id", authenticate, ReservationController.update);
  */
 router.delete("/:id", authenticate, ReservationController.cancel);
 
+/**
+ * @swagger
+ * /reservations/active-plates:
+ *   get:
+ *     summary: Listar placas com reservas ativas no momento atual
+ *     tags: [Reservations]
+ */
+router.get("/active-plates", ReservationController.getActivePlates);
+
 export default router;
 
 

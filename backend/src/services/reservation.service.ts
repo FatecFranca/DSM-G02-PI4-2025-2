@@ -143,6 +143,37 @@ class ReservationService {
     await prisma.reservation.delete({ where: { id } });
     return { id, cancelled: true };
   }
+
+  async getActivePlates() {
+    const now = new Date();
+    
+    // Buscar reservas que estão ativas no momento atual
+    const activeReservations = await prisma.reservation.findMany({
+      where: {
+        startTime: { lte: now },
+        endTime: { gt: now }
+      },
+      select: {
+        vehiclePlate: true,
+        parkingSlotId: true,
+        startTime: true,
+        endTime: true
+      },
+      orderBy: {
+        startTime: 'asc'
+      }
+    });
+
+    // Retornar apenas as placas únicas com informações adicionais
+    const plates = activeReservations.map(reservation => ({
+      plate: reservation.vehiclePlate,
+      parkingSlotId: reservation.parkingSlotId,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime
+    }));
+
+    return plates;
+  }
 }
 
 export default new ReservationService();

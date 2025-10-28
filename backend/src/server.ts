@@ -12,6 +12,7 @@ import sensorsDataRoutes from "./routes/sensors_data.routes"
 import statisticsRoutes from "./routes/statistics.routes"
 import cors from "cors";
 import reservationRoutes from "./routes/reservation.routes";
+import activePlatesRoutes from "./routes/active-plates.routes";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import adminRoutes from "./routes/admin.routes";
@@ -30,7 +31,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Rota principal que retorna o HTML
 app.get('/', (req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 app.use("/contact-messages", contactMessageRoutes)
 app.use("/parkings", parkingRoutes)
@@ -41,6 +42,7 @@ app.use("/parking-sensor-data", parkingSensorDataRoutes)
 app.use("/sensors-data", sensorsDataRoutes)
 app.use("/statistics", statisticsRoutes)
 app.use("/reservations", reservationRoutes)
+app.use("/active-plates", activePlatesRoutes)
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
 app.use("/admins", adminRoutes)

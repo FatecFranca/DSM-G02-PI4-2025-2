@@ -59,6 +59,12 @@ export default function ReservasPage() {
 
   const [statusFilter, setStatusFilter] = useState<SpotStatus | "todas">("todas")
   const [parkingFilter, setParkingFilter] = useState<string>("todos")
+  const [activePlates, setActivePlates] = useState<Array<{
+    plate: string
+    parkingSlotId: string
+    startTime: string
+    endTime: string
+  }>>([])
 
   const timeOptions = useMemo(() => generateHourlyTimes(6, 22), [])
 
@@ -144,10 +150,17 @@ export default function ReservasPage() {
     Promise.all([
       api.get<Parking[]>("/parkings", { cache: "no-store" }),
       api.get<ParkingSlot[]>("/parking-slots", { cache: "no-store" }),
+      api.get<Array<{
+        plate: string
+        parkingSlotId: string
+        startTime: string
+        endTime: string
+      }>>("/reservations/active-plates", { cache: "no-store" }),
     ])
-      .then(([ps, sl]) => {
+      .then(([ps, sl, ap]) => {
         setParkings(ps)
         setSlots(sl)
+        setActivePlates(ap)
       })
       .catch((e: any) => setError(e?.message || "Falha ao carregar vagas"))
       .finally(() => setLoading(false))
@@ -504,6 +517,33 @@ export default function ReservasPage() {
                     })
                   })()}
                 </div>
+
+                {/* Placas Ativas */}
+                {activePlates.length > 0 && (
+                  <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                      <Car className="w-4 h-4" />
+                      Placas com reservas ativas agora ({activePlates.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {activePlates.map((item, index) => (
+                        <div key={index} className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm">
+                          <div className="font-medium text-gray-900">{item.plate}</div>
+                          <div className="text-xs text-gray-500">Vaga: {item.parkingSlotId}</div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(item.startTime).toLocaleTimeString("pt-BR", { 
+                              hour: "2-digit", 
+                              minute: "2-digit" 
+                            })} - {new Date(item.endTime).toLocaleTimeString("pt-BR", { 
+                              hour: "2-digit", 
+                              minute: "2-digit" 
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Legenda */}
                 <div className="mt-6 flex flex-wrap items-center gap-4">

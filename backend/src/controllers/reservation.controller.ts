@@ -63,6 +63,15 @@ class ReservationController {
       return handleError(res, err as Error, "Erro ao cancelar reserva.");
     }
   }
+
+  async getActivePlates(req: Request, res: Response) {
+    try {
+      const plates = await ReservationService.getActivePlates();
+      return res.json(plates);
+    } catch (err) {
+      return handleError(res, err as Error, "Erro ao buscar placas ativas.");
+    }
+  }
 }
 
 export default new ReservationController();
