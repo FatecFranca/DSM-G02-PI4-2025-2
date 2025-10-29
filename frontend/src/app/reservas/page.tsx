@@ -62,6 +62,8 @@ export default function ReservasPage() {
   const [activePlates, setActivePlates] = useState<Array<{
     plate: string
     parkingSlotId: string
+    slotNumber: number
+    parkingName: string
     startTime: string
     endTime: string
   }>>([])
@@ -153,9 +155,11 @@ export default function ReservasPage() {
       api.get<Array<{
         plate: string
         parkingSlotId: string
+        slotNumber: number
+        parkingName: string
         startTime: string
         endTime: string
-      }>>("/reservations/active-plates", { cache: "no-store" }),
+      }>>("/active-plates", { cache: "no-store" }),
     ])
       .then(([ps, sl, ap]) => {
         setParkings(ps)
@@ -529,7 +533,9 @@ export default function ReservasPage() {
                       {activePlates.map((item, index) => (
                         <div key={index} className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm">
                           <div className="font-medium text-gray-900">{item.plate}</div>
-                          <div className="text-xs text-gray-500">Vaga: {item.parkingSlotId}</div>
+                          <div className="text-xs text-gray-500">
+                            {item.parkingName} - Vaga {item.slotNumber}
+                          </div>
                           <div className="text-xs text-gray-500">
                             {new Date(item.startTime).toLocaleTimeString("pt-BR", { 
                               hour: "2-digit", 

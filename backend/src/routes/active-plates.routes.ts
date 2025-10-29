@@ -25,6 +25,12 @@ const router = Router();
  *                   parkingSlotId:
  *                     type: string
  *                     description: ID da vaga de estacionamento
+ *                   slotNumber:
+ *                     type: number
+ *                     description: Número da vaga
+ *                   parkingName:
+ *                     type: string
+ *                     description: Nome do estacionamento
  *                   startTime:
  *                     type: string
  *                     format: date-time

@@ -158,7 +158,7 @@ export default function SobrePage() {
             title: "Política de Privacidade",
             description: "Nossa política de privacidade",
             icon: "shield-checkmark",
-            action: () => router.push("/privacidade")
+            action: () => router.push("/privacidade" as any)
         },
         {
             id: "support",

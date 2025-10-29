@@ -19,7 +19,17 @@ class ActivePlatesController {
           vehiclePlate: true,
           parkingSlotId: true,
           startTime: true,
-          endTime: true
+          endTime: true,
+          parkingSlot: {
+            select: {
+              number: true,
+              parking: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
         },
         orderBy: {
           startTime: 'asc'
@@ -30,6 +40,8 @@ class ActivePlatesController {
       const plates = activeReservations.map(reservation => ({
         plate: reservation.vehiclePlate,
         parkingSlotId: reservation.parkingSlotId,
+        slotNumber: reservation.parkingSlot.number,
+        parkingName: reservation.parkingSlot.parking.name,
         startTime: reservation.startTime,
         endTime: reservation.endTime
       }));

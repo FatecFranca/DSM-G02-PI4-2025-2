@@ -67,6 +67,18 @@ class ReservationService {
   async listByUser(userId: string) {
     return prisma.reservation.findMany({
       where: { userId },
+      include: {
+        parkingSlot: {
+          select: {
+            number: true,
+            parking: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      },
       orderBy: { startTime: "desc" },
     });
   }

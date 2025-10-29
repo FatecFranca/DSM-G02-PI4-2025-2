@@ -19,6 +19,12 @@ type Reservation = {
     endTime?: string
     vehiclePlate: string
     createdAt?: string
+    parkingSlot?: {
+        number: number
+        parking: {
+            name: string
+        }
+    }
 }
 
 export default function ClientMyReservationsPage() {
@@ -237,7 +243,12 @@ export default function ClientMyReservationsPage() {
                                                         `${durationHours ?? "-"}${durationHours ? 'h' : ''}`
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-800">{r.parkingSlotId}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-800">
+                                                    {r.parkingSlot ? 
+                                                        `${r.parkingSlot.parking.name} - Vaga ${r.parkingSlot.number}` : 
+                                                        r.parkingSlotId
+                                                    }
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-gray-800">
                                                     {isEditing ? (
                                                         <input
