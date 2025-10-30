@@ -1,216 +1,113 @@
-# 🚗 Smart Parking - Sistema Inteligente de Estacionamento
+# 📱 Smart Parking App (React Native + Expo)
 
 <div align="center">
   <img src="https://img.shields.io/badge/React%20Native-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React Native" />
-  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white" alt="Expo" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white" alt="ESLint" />
 </div>
 
 ## 📋 Índice
 
-- [📖 Sobre o Projeto](#-sobre-o-projeto)
+- [📖 Sobre o App](#-sobre-o-app)
 - [✨ Funcionalidades](#-funcionalidades)
-- [🏗️ Arquitetura](#️-arquitetura)
-- [🛠️ Tecnologias](#️-tecnologias)
-- [⚙️ Configuração](#️-configuração)
-- [🚀 Executando o Projeto](#-executando-o-projeto)
-- [📱 Screenshots](#-screenshots)
-- [📊 API Documentation](#-api-documentation)
+- [🏗️ Arquitetura do App](#️-arquitetura-do-app)
+- [🛠️ Stack Mobile](#️-stack-mobile)
+- [⚙️ Configuração do Ambiente](#️-configuração-do-ambiente)
+- [🚀 Execução e Build](#-execução-e-build)
+- [🧭 Navegação](#-navegação)
+- [🎨 Temas e UI](#-temas-e-ui)
+- [🔐 Autenticação](#-autenticação)
+- [🌐 Integração com Backend](#-integração-com-backend)
+- [🧪 Qualidade e Utilitários](#-qualidade-e-utilitários)
+- [🧰 Troubleshooting](#-troubleshooting)
+- [❓ FAQs](#-faqs)
+- [📊 Documentação da API](#-documentação-da-api)
 - [🤝 Contribuição](#-contribuição)
 - [📄 Licença](#-licença)
 
-## 📖 Sobre o Projeto
+## 📖 Sobre o App
 
-O **Smart Parking** é um sistema completo de gerenciamento inteligente de estacionamentos que combina tecnologia IoT, aplicações mobile e web para oferecer uma experiência moderna e eficiente para usuários e administradores.
+O **Smart Parking App** é o aplicativo móvel do ecossistema Smart Parking. Construído com **React Native** e **Expo**, ele permite ao usuário:
 
-### 🎯 Objetivo
-
-Desenvolver uma solução integrada que permita:
-- **Monitoramento em tempo real** das vagas de estacionamento
-- **Reserva antecipada** de vagas pelos usuários
-- **Gestão administrativa** completa com relatórios e analytics
-- **Integração com sensores IoT** para detecção automática de ocupação
+- Consultar disponibilidade de vagas em tempo real
+- Realizar e gerenciar reservas
+- Visualizar métricas pessoais e histórico
+- Receber feedback imediato com uma UI moderna
+- Autenticar-se como cliente ou administrador (com redirecionamentos de acordo com o perfil)
 
 ## ✨ Funcionalidades
 
-### 📱 **Aplicativo Mobile (React Native)**
-
-#### 👤 **Para Usuários**
+### 👤 Experiência do Usuário
 - **🔍 Localização e Disponibilidade**
-  - Mapa com vagas disponíveis em tempo real
-  - Visualização de distância até o estacionamento
+  - Vagas disponíveis em tempo real
+  - Distância/posição do estacionamento
   - Status atualizado via sensores IoT
 
 - **📅 Reserva de Vagas**
-  - Escolha de vaga e horário específico
-  - Confirmação e cancelamento de reservas
-  - Notificações de status da reserva
+  - Escolha de vaga e horário
+  - Confirmação/cancelamento
+  - Alerta de status (feedback visual)
 
 - **🚗 Meu Estacionamento**
-  - Histórico completo de entradas e saídas
-  - Tempo atual da estadia
-  - Valor a pagar em tempo real
+  - Histórico de reservas
+  - Tempo da estadia
+  - Resumo de valores (quando aplicável)
 
-- **💳 Pagamentos**
-  - Faturas e recibos digitais
-  - Integração com PIX, cartão e outros meios
-  - Histórico de transações
+- **💳 Pagamentos (roadmap)**
+  - PIX e cartão (integração futura)
+  - Recibos e histórico
 
-#### 👨‍💼 **Para Administradores**
-- **📊 Dashboard Inteligente**
-  - KPIs: ocupação média, tempo médio de permanência
-  - Receita do dia/mês em tempo real
-  - Mapa visual dos estacionamentos (verde = livre, vermelho = ocupada)
+### 👨‍💼 Suporte ao Admin
+- Redirecionamento para área admin no login com `role=admin`
+- Links/contexto para operações administrativas
 
-- **🏢 Gestão de Vagas**
-  - Lista completa com ID e localização
-  - Status: ocupada, livre, reservada, manutenção
-  - Alteração manual de status
-  - Monitoramento via sensores IoT
-
-- **👥 Gestão de Clientes**
-  - CRUD completo de clientes
-  - Cadastro de placas de veículos
-  - Histórico de uso por cliente
-
-- **📈 Relatórios e Analytics**
-  - Filtros por vaga, cliente e período
-  - Exportação em PDF/Excel
-  - Gráficos de ocupação e receita
-
-### 🌐 **Painel Web Administrativo (Next.js)**
-
-- **Interface moderna** com Tailwind CSS
-- **Dashboard completo** com métricas em tempo real
-- **Gestão de estacionamentos** e vagas
-- **Relatórios avançados** com gráficos interativos
-- **Configurações** de tarifas e sensores
-
-### 🔧 **Backend API (Node.js + Express)**
-
-- **RESTful API** completa com TypeScript
-- **Autenticação JWT** segura
-- **Documentação Swagger** automática
-- **Integração com banco PostgreSQL**
-- **Middleware de validação** com Joi
-- **Sistema de cache** para performance
-
-## 🏗️ Arquitetura
+## 🏗️ Arquitetura do App
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Mobile App    │    │   Web Admin     │    │   IoT Sensors   │
-│  (React Native) │    │   (Next.js)     │    │   (Hardware)    │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                    ┌─────────────▼─────────────┐
-                    │      Backend API          │
-                    │    (Node.js + Express)    │
-                    └─────────────┬─────────────┘
-                                  │
-                    ┌─────────────▼─────────────┐
-                    │     PostgreSQL Database   │
-                    │     (Prisma ORM)         │
-                    └───────────────────────────┘
+React Native (Expo)
+├─ contexts/ (Auth, Theme)
+├─ app/       (telas/páginas - App Router do Expo)
+├─ components/ (UI reutilizável, blocos de tela)
+├─ lib/       (api, hooks, utils)
+└─ assets/    (imagens, fontes)
 ```
 
-## 🛠️ Tecnologias
+## 🛠️ Stack Mobile
 
-### 📱 **Frontend Mobile**
-- **React Native** - Framework mobile multiplataforma
-- **Expo** - Plataforma de desenvolvimento
-- **TypeScript** - Tipagem estática
-- **React Navigation** - Navegação entre telas
-- **AsyncStorage** - Armazenamento local
-- **Vector Icons** - Ícones personalizados
+- **React Native + Expo** (SDK 53)
+- **TypeScript** (tipagem forte)
+- **React Navigation** (tabs/stack)
+- **AsyncStorage** (persistência de sessão)
+- **Lucide/Vector Icons** (ícones)
 
-### 🌐 **Frontend Web**
-- **Next.js 14** - Framework React para produção
-- **Tailwind CSS** - Framework CSS utilitário
-- **TypeScript** - Tipagem estática
-- **Chart.js** - Gráficos e visualizações
-- **React Hook Form** - Gerenciamento de formulários
-- **Framer Motion** - Animações
+## ⚙️ Configuração do Ambiente
 
-### ⚙️ **Backend**
-- **Node.js** - Runtime JavaScript
-- **Express.js** - Framework web
-- **TypeScript** - Tipagem estática
-- **Prisma** - ORM moderno
-- **PostgreSQL** - Banco de dados relacional
-- **JWT** - Autenticação
-- **Swagger** - Documentação da API
+### 📋 Pré-requisitos
 
-### 🔧 **Ferramentas de Desenvolvimento**
-- **ESLint** - Linting de código
-- **Prettier** - Formatação de código
-- **Jest** - Testes unitários
-- **Git** - Controle de versão
-
-## ⚙️ Configuração
-
-### 📋 **Pré-requisitos**
-
-- **Node.js** (versão 18 ou superior)
+- **Node.js** 18+
 - **npm** ou **yarn**
-- **PostgreSQL** (versão 13 ou superior)
-- **Git**
+- **Expo CLI** (`npm i -g expo-cli`, opcional)
+- Backend rodando em `http://localhost:4000` (ajustável)
 
-### 🔧 **Variáveis de Ambiente**
+### 🔧 Variáveis de Ambiente (Expo)
 
-Crie um arquivo `.env` na raiz do projeto backend:
+Crie/valide `app/app.config.js` (ou `.local.js`) com as variáveis usadas pelo app:
 
-```env
-# Database
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/smartparking"
-
-# JWT
-JWT_SECRET="seu_jwt_secret_aqui"
-
-# Server
-PORT=4000
-NODE_ENV=development
-
-# AWS S3 (opcional)
-AWS_ACCESS_KEY_ID="sua_access_key"
-AWS_SECRET_ACCESS_KEY="sua_secret_key"
-AWS_REGION="us-east-1"
-AWS_BUCKET_NAME="seu_bucket"
+```js
+export default ({ config }) => ({
+  ...config,
+  extra: {
+    apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000",
+  }
+});
 ```
 
-## 🚀 Executando o Projeto
+Você também pode definir em `.env` (se usar dotenv-cli) ou no ambiente do CI/CD.
 
-### 1️⃣ **Clone o Repositório**
+## 🚀 Execução e Build
 
-```bash
-git clone https://github.com/seu-usuario/smart-parking.git
-cd smart-parking
-```
-
-### 2️⃣ **Configuração do Backend**
-
-```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma db push
-npx prisma db seed
-npm run dev
-```
-
-### 3️⃣ **Configuração do Frontend Web**
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 4️⃣ **Configuração do App Mobile**
+### 🛠️ Desenvolvimento (Expo)
 
 ```bash
 cd app
@@ -218,7 +115,7 @@ npm install
 npx expo start
 ```
 
-### 📱 **Executando no Dispositivo**
+### 📱 Executando no Dispositivo
 
 ```bash
 # Android
@@ -231,65 +128,102 @@ npx expo start --ios
 npx expo start --web
 ```
 
-## 📱 Screenshots
+> Dica: use o aplicativo Expo Go para ler o QR Code no Android/iOS.
 
-### 🏠 **Dashboard Mobile**
-- Visão geral dos estacionamentos
-- Estatísticas em tempo real
-- Gráficos de ocupação
+### 📦 Build (APK/AAB/IPA) com EAS
 
-### 📊 **Painel Administrativo**
-- Métricas detalhadas
-- Gestão de vagas
-- Relatórios avançados
+```bash
+eas login                 # faça login na sua conta Expo
+EAS_BUILD=1 eas build:configure
 
-### 🔧 **Configurações**
-- Gestão de usuários
-- Configuração de sensores
-- Tarifas e preços
+# Android
+EAS_BUILD=1 eas build --platform android
 
-## 📊 API Documentation
-
-A documentação completa da API está disponível através do Swagger UI:
-
-- **URL:** `http://localhost:4000/api-docs`
-- **Métodos:** GET, POST, PUT, DELETE
-- **Autenticação:** JWT Bearer Token
-- **Formato:** JSON
-
-### 🔗 **Endpoints Principais**
-
+# iOS (requer conta Apple)
+EAS_BUILD=1 eas build --platform ios
 ```
-POST   /auth/login          # Login de usuário
-POST   /auth/register       # Registro de usuário
-GET    /parkings            # Listar estacionamentos
-GET    /parking-slots       # Listar vagas
-POST   /reservations        # Criar reserva
-GET    /statistics          # Estatísticas gerais
+
+Os artefatos ficam disponíveis no painel do Expo (link exibido no terminal).
+
+## 🧭 Navegação
+
+- Tabs inferiores: Home, Reservas, Perfil
+- Stacks para detalhes (ex.: confirmação de reserva)
+- Redirecionamento por role após login (user → Reservas, admin → Admin)
+
+## 🎨 Temas e UI
+
+- Design system baseado em utility-classes (Tailwind-like) e estilos consistentes
+- Componentes reutilizáveis (Button, Card, StatCounter, etc.)
+- Suporte a modo claro/escuro (se habilitado no dispositivo)
+
+## 🔐 Autenticação
+
+- Contexto `AuthContext` com `login`, `register`, `logout`
+- Persistência de `token` e `user` via `AsyncStorage`
+- Injeção de `Authorization: Bearer <token>` automaticamente no cliente API
+- Proteção de rotas sensíveis via checagem de `user`/`role`
+
+## 🌐 Integração com Backend
+
+- Base URL: `EXPO_PUBLIC_API_BASE_URL`
+- Endpoints principais consumidos:
+  - `POST /auth/login`, `POST /auth/register`
+  - `GET /parkings`, `GET /parking-slots`
+  - `POST /reservations`, `GET /reservations/me`, `PUT /reservations/:id`, `DELETE /reservations/:id`
+  - `GET /active-plates`
+
+## 🧪 Qualidade e Utilitários
+
+```bash
+# Lint
+npm run lint
+
+# Formatação (se configurado)
+npm run format
+
+# Testes (se configurado)
+npm test
 ```
+
+## 🧰 Troubleshooting
+
+- "Network request failed":
+  - Confirme `EXPO_PUBLIC_API_BASE_URL` acessível do dispositivo
+  - No emulador Android, use `http://10.0.2.2:4000` (em vez de `localhost`)
+- 401/"Token ausente":
+  - Verifique se o login salvou `auth_token` e `auth_user`
+  - Garanta que o cliente API envia `Authorization` no header
+- Expo não abre no dispositivo:
+  - Verifique que PC e celular estão na mesma rede
+  - Tente `expo start --tunnel`
+
+## ❓ FAQs
+
+- Posso rodar sem backend? → Algumas telas (mock) funcionam, mas reservas exigem API.
+- Como alterar o tema? → Ajuste classes utilitárias e/ou tema no contexto.
+- Onde ficam as rotas? → Em `app/app/` (páginas e stacks).
+
+## 📊 Documentação da API
+
+- Swagger UI: `http://localhost:4000/api-docs`
+- Auth: JWT Bearer Token
+- Formato: JSON
 
 ## 🤝 Contribuição
 
-1. **Fork** o projeto
-2. **Crie** uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** para a branch (`git push origin feature/AmazingFeature`)
-5. **Abra** um Pull Request
+1. **Fork** do projeto
+2. **Branch**: `git checkout -b feature/nova-feature`
+3. **Commit**: `git commit -m "feat(app): adiciona nova feature"`
+4. **Push**: `git push origin feature/nova-feature`
+5. **Pull Request** com descrição clara
 
-### 📝 **Padrões de Código**
-
+### 📝 Padrões de Código
 - Use **TypeScript** em todos os arquivos
 - Siga as convenções do **ESLint**
-- Escreva **testes** para novas funcionalidades
-- Documente **APIs** com JSDoc
+- Escreva **testes** para novas funcionalidades (quando presentes)
+- Documente componentes e fluxos principais
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
----
-
-<div align="center">
-  <p>Desenvolvido com ❤️ pela equipe DSM-G02</p>
-  <p>FATEC - Faculdade de Tecnologia de São Paulo</p>
-</div>
+Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
