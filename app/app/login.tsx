@@ -13,12 +13,14 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState<'user' | 'admin'>('user');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
@@ -27,12 +29,25 @@ export default function LoginScreen() {
         }
 
         setLoading(true);
-        
-        // Simular delay de login
-        setTimeout(() => {
+        setError('');
+
+        try {
+            const result = await login(email, password, 'admin');
+            
+            if (result.success) {
+                // Redirecionar para a área administrativa
+                router.replace('/(tabs)');
+            } else {
+                setError(result.error || 'Credenciais inválidas');
+                Alert.alert('Erro', result.error || 'Credenciais inválidas');
+            }
+        } catch (err) {
+            setError('Erro ao fazer login');
+            Alert.alert('Erro', 'Erro ao conectar com o servidor');
+            console.error('Login error:', err);
+        } finally {
             setLoading(false);
-            router.replace('/(tabs)');
-        }, 1500);
+        }
     };
 
     return (
@@ -45,7 +60,8 @@ export default function LoginScreen() {
                     <View style={styles.header}>
                         <Ionicons name="car" size={64} color="#3B82F6" />
                         <Text style={styles.title}>Smart Parking</Text>
-                        <Text style={styles.subtitle}>Faça login para continuar</Text>
+                        <Text style={styles.subtitle}>Painel Administrativo</Text>
+                        <Text style={styles.adminBadge}>Acesso Administrador</Text>
                     </View>
 
                     <View style={styles.form}>
@@ -73,6 +89,13 @@ export default function LoginScreen() {
                             />
                         </View>
 
+                        {error ? (
+                            <View style={styles.errorContainer}>
+                                <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                                <Text style={styles.errorText}>{error}</Text>
+                            </View>
+                        ) : null}
+
                         <TouchableOpacity
                             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
                             onPress={handleLogin}
@@ -84,8 +107,8 @@ export default function LoginScreen() {
                         </TouchableOpacity>
 
                         <View style={styles.footer}>
-                            <Text style={styles.footerText}>Sistema de Demonstração</Text>
-                            <Text style={styles.footerSubtext}>Use qualquer email e senha para entrar</Text>
+                            <Text style={styles.footerText}>Painel Administrativo Mobile</Text>
+                            <Text style={styles.footerSubtext}>Acesso exclusivo para administradores</Text>
                         </View>
                     </View>
                 </ScrollView>
@@ -121,6 +144,17 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: '#6B7280',
+        marginBottom: 8,
+    },
+    adminBadge: {
+        fontSize: 12,
+        color: '#3B82F6',
+        fontWeight: '600',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        backgroundColor: '#EFF6FF',
+        borderRadius: 12,
+        overflow: 'hidden',
     },
     form: {
         backgroundColor: '#FFFFFF',
@@ -210,5 +244,21 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#9CA3AF',
         textAlign: 'center',
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FEF2F2',
+        borderWidth: 1,
+        borderColor: '#FEE2E2',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 16,
+    },
+    errorText: {
+        flex: 1,
+        marginLeft: 8,
+        fontSize: 14,
+        color: '#EF4444',
     },
 });

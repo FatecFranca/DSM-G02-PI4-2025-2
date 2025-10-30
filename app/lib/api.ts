@@ -118,13 +118,20 @@ class ApiService {
     }
   }
 
-  private getHeaders(): HeadersInit {
+  private async getHeaders(): Promise<HeadersInit> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+    // Sempre buscar o token mais recente do AsyncStorage
+    try {
+      const currentToken = await AsyncStorage.getItem('auth_token');
+      if (currentToken) {
+        this.token = currentToken;
+        headers.Authorization = `Bearer ${currentToken}`;
+      }
+    } catch (error) {
+      console.error('Error getting token:', error);
     }
 
     return headers;
@@ -137,10 +144,11 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     
     try {
+      const headers = await this.getHeaders();
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...this.getHeaders(),
+          ...headers,
           ...options.headers,
         },
       });
