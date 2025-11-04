@@ -20,10 +20,6 @@ class ActivePlatesController {
 
       // Buscar reservas ativas no horário de Brasília
       const activeReservations = await prisma.reservation.findMany({
-        where: {
-          startTime: { lte: nowBr },
-          endTime: { gt: nowBr },
-        },
         select: {
           vehiclePlate: true,
           parkingSlotId: true,
