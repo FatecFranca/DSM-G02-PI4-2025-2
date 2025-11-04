@@ -13,9 +13,12 @@ export type CreateReservationInput = {
 };
 
 function toUtc(dateStr: string, timeStr: string): Date {
-  // Combine date and time into ISO and let JS parse in local TZ, then convert to UTC date
-  const local = new Date(`${dateStr}T${timeStr}:00`);
-  return new Date(local.toISOString());
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr.split(":").map(Number);
+
+  // Cria Date em UTC, subtraindo 3h de Brasília
+  const dateUtc = new Date(Date.UTC(year, month - 1, day, hour + 3, minute, 0));
+  return dateUtc;
 }
 
 class ReservationService {
@@ -52,7 +55,7 @@ class ReservationService {
     });
 
     // schedule availability toggling
-    try { await scheduleReservationWindow(reservation.id); } catch {}
+    try { await scheduleReservationWindow(reservation.id); } catch { }
 
     return reservation;
   }
@@ -93,15 +96,15 @@ class ReservationService {
     const { parkingSlotId, vehiclePlate, date, startHour, durationHours, userId } = input;
 
     // Verificar se a reserva existe e pertence ao usuário
-    const existingReservation = await prisma.reservation.findUnique({ 
+    const existingReservation = await prisma.reservation.findUnique({
       where: { id },
       include: { parkingSlot: true }
     });
-    
+
     if (!existingReservation) {
       throw new Error("Reserva não encontrada.");
     }
-    
+
     if (existingReservation.userId !== userId) {
       throw new Error("Você não tem permissão para editar esta reserva.");
     }
@@ -143,11 +146,11 @@ class ReservationService {
   async cancel(id: string, userId: string) {
     // Verificar se a reserva existe e pertence ao usuário
     const reservation = await prisma.reservation.findUnique({ where: { id } });
-    
+
     if (!reservation) {
       throw new Error("Reserva não encontrada.");
     }
-    
+
     if (reservation.userId !== userId) {
       throw new Error("Você não tem permissão para cancelar esta reserva.");
     }
@@ -158,7 +161,7 @@ class ReservationService {
 
   async getActivePlates() {
     const now = new Date();
-    
+
     // Buscar reservas que estão ativas no momento atual
     const activeReservations = await prisma.reservation.findMany({
       where: {
