@@ -13,13 +13,9 @@ import {
     calculateTrends
 } from "@/lib/statistics"
 import {
-    AlertCircle,
-    BarChart3,
-    Calendar,
     Car,
     CreditCard,
     MapPin,
-    Settings,
     Users
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
@@ -186,23 +182,6 @@ export default function AdminDashboard() {
         ]
     }, [statsData])
 
-    const recentActivity = messages
-
-    const alerts = [
-        {
-            id: 1,
-            type: "warning",
-            message: "Vaga B03 em manutenção há 2 horas",
-            time: "5 min atrás"
-        },
-        {
-            id: 2,
-            type: "info",
-            message: "Manutenção programada para hoje às 22h",
-            time: "1 hora atrás"
-        }
-    ]
-
     const occupationStats = useMemo(() => {
         const total = slots.length
         const livre = slots.filter(s => s.isActive && s.isAvailable).length
@@ -359,50 +338,6 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             </div>
-
-            {/* Alerts and Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Alerts */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Alertas</h2>
-                    <div className="space-y-3">
-                        {alerts.map((alert) => (
-                            <div key={alert.id} className="flex items-start space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="text-sm text-yellow-800">{alert.message}</p>
-                                    <p className="text-xs text-yellow-600 mt-1">{alert.time}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button className="flex items-center justify-center space-x-2 p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors">
-                            <Calendar className="w-5 h-5 text-primary-600" />
-                            <span className="text-sm font-medium text-primary-700">Nova Reserva</span>
-                        </button>
-                        <button className="flex items-center justify-center space-x-2 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                            <Users className="w-5 h-5 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Adicionar Funcionário</span>
-                        </button>
-                        <button className="flex items-center justify-center space-x-2 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                            <BarChart3 className="w-5 h-5 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Relatório</span>
-                        </button>
-                        <button className="flex items-center justify-center space-x-2 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                            <Settings className="w-5 h-5 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Configurações</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-
 
             {/* Slot Info Modal */}
             {selectedSlot && (

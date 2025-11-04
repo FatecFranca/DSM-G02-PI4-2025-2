@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Button from "@/components/ui/Button"
-import { Search, RefreshCcw, Plus, Trash2, Save, Info } from "lucide-react"
+import { Search, RefreshCcw, Plus, Trash2, Save, Info, AlertCircle, X } from "lucide-react"
 import api from "@/lib/api"
 
 type Parking = { id: string; name: string }
@@ -80,6 +80,8 @@ export default function AdminSensoresPage() {
     isActive: true,
   })
   const [saving, setSaving] = useState(false)
+  const [operationError, setOperationError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; type: "sensor" | "parkingSensor" } | null>(null)
 
   useEffect(() => {
     refreshAll()
@@ -182,6 +184,7 @@ export default function AdminSensoresPage() {
 
   const toggleActive = async (item: Sensor | ParkingSensor) => {
     try {
+      setOperationError(null)
       if ("parkingSlotId" in item) {
         await api.put(`/sensors/${item.id}`, { isActive: !item.isActive })
         await refreshAll()
@@ -189,23 +192,33 @@ export default function AdminSensoresPage() {
         await api.put(`/parking-sensors/${item.id}`, { isActive: !item.isActive })
         await refreshAll()
       }
-    } catch (e) {
-      alert("Falha ao atualizar status")
+    } catch (e: any) {
+      setOperationError(e?.message || "Falha ao atualizar status")
     }
   }
 
-  const removeItem = async (item: Sensor | ParkingSensor) => {
-    if (!confirm("Deseja remover este sensor?")) return
+  const handleDeleteClick = (item: Sensor | ParkingSensor) => {
+    setDeleteConfirm({
+      id: item.id,
+      name: item.name,
+      type: "parkingSlotId" in item ? "sensor" : "parkingSensor"
+    })
+  }
+
+  const removeItem = async () => {
+    if (!deleteConfirm) return
     try {
-      if ("parkingSlotId" in item) {
-        await api.delete(`/sensors/${item.id}`)
-        await refreshAll()
+      setOperationError(null)
+      if (deleteConfirm.type === "sensor") {
+        await api.delete(`/sensors/${deleteConfirm.id}`)
       } else {
-        await api.delete(`/parking-sensors/${item.id}`)
-        await refreshAll()
+        await api.delete(`/parking-sensors/${deleteConfirm.id}`)
       }
-    } catch (e) {
-      alert("Falha ao excluir sensor")
+      setDeleteConfirm(null)
+      await refreshAll()
+    } catch (e: any) {
+      setOperationError(e?.message || "Falha ao excluir sensor")
+      setDeleteConfirm(null)
     }
   }
 
@@ -220,11 +233,39 @@ export default function AdminSensoresPage() {
           <Button variant="secondary" size="sm" onClick={refreshAll}>
             <RefreshCcw className="w-4 h-4 mr-2" /> Atualizar
           </Button>
-          <Button variant="primary" size="sm" onClick={() => { setIsCreateOpen(true); setCreateForm({ scope: tab, name: "", description: "", type: "", parkingId: parkings[0]?.id || "", parkingSlotId: "", isActive: true }) }}>
+          <Button variant="primary" size="sm" onClick={() => { 
+            setIsCreateOpen(true)
+            setOperationError(null)
+            setCreateForm({ 
+              scope: tab, 
+              name: "", 
+              description: "", 
+              type: "", 
+              parkingId: tab === "parkingSensors" ? (parkings[0]?.id || "") : "", 
+              parkingSlotId: "", 
+              isActive: true 
+            }) 
+          }}>
             <Plus className="w-4 h-4 mr-2" /> Novo Sensor
           </Button>
         </div>
       </div>
+
+      {/* Error Message */}
+      {operationError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-red-700">{operationError}</p>
+          </div>
+          <button
+            onClick={() => setOperationError(null)}
+            className="text-red-600 hover:text-red-800 flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-white border border-gray-200 rounded-lg p-2 w-fit">
@@ -304,7 +345,7 @@ export default function AdminSensoresPage() {
                             <Info className="w-4 h-4" />
                           </button>
                           <button className="text-gray-700 hover:text-gray-900" onClick={() => toggleActive(s)}>{s.isActive ? "Desativar" : "Ativar"}</button>
-                          <button className="text-red-600 hover:text-red-900" onClick={() => removeItem(s)}>
+                          <button className="text-red-600 hover:text-red-900" onClick={() => handleDeleteClick(s)}>
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -353,7 +394,7 @@ export default function AdminSensoresPage() {
                             <Info className="w-4 h-4" />
                           </button>
                           <button className="text-gray-700 hover:text-gray-900" onClick={() => toggleActive(s)}>{s.isActive ? "Desativar" : "Ativar"}</button>
-                          <button className="text-red-600 hover:text-red-900" onClick={() => removeItem(s)}>
+                          <button className="text-red-600 hover:text-red-900" onClick={() => handleDeleteClick(s)}>
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -441,17 +482,48 @@ export default function AdminSensoresPage() {
               <h3 className="text-lg font-bold text-gray-900">Novo Sensor</h3>
             </div>
             <div className="p-5 space-y-4">
+              {operationError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <p className="text-sm text-red-700">{operationError}</p>
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Escopo</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2" value={createForm.scope} onChange={(e) => setCreateForm(f => ({ ...f, scope: e.target.value as any }))}>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2" value={createForm.scope} onChange={(e) => setCreateForm(f => ({ ...f, scope: e.target.value as any, type: "" }))}>
                     <option value="sensors">Vaga</option>
                     <option value="parkingSensors">Estacionamento</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2" value={createForm.type} onChange={(e) => setCreateForm(f => ({ ...f, type: e.target.value }))} placeholder="IR, TEMPERATURE, ..." />
+                  {createForm.scope === "parkingSensors" ? (
+                    <select 
+                      key="parking-sensor-type"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent" 
+                      value={createForm.type} 
+                      onChange={(e) => setCreateForm(f => ({ ...f, type: e.target.value }))}
+                    >
+                      <option value="">Selecione um tipo...</option>
+                      <option value="TEMPERATURE">TEMPERATURE</option>
+                      <option value="HUMIDITY">HUMIDITY</option>
+                      <option value="LIGHT">LIGHT</option>
+                      <option value="PRESSURE">PRESSURE</option>
+                      <option value="SOUND">SOUND</option>
+                      <option value="VIBRATION">VIBRATION</option>
+                      <option value="MOTION">MOTION</option>
+                      <option value="GAS">GAS</option>
+                    </select>
+                  ) : (
+                    <input 
+                      key="sensor-type"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent" 
+                      value={createForm.type} 
+                      onChange={(e) => setCreateForm(f => ({ ...f, type: e.target.value }))} 
+                      placeholder="IR, TEMPERATURE, ..." 
+                    />
+                  )}
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -487,10 +559,11 @@ export default function AdminSensoresPage() {
               </div>
             </div>
             <div className="p-5 border-t border-gray-200 flex items-center justify-end gap-3">
-              <Button variant="secondary" size="sm" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+              <Button variant="secondary" size="sm" onClick={() => { setIsCreateOpen(false); setOperationError(null) }}>Cancelar</Button>
               <Button variant="primary" size="sm" disabled={saving} onClick={async () => {
                 try {
                   setSaving(true)
+                  setOperationError(null)
                   if (createForm.scope === "sensors") {
                     await api.post("/sensors", {
                       name: createForm.name,
@@ -510,14 +583,49 @@ export default function AdminSensoresPage() {
                   }
                   setIsCreateOpen(false)
                   await refreshAll()
-                } catch (e) {
-                  alert("Falha ao criar sensor")
+                } catch (e: any) {
+                  setOperationError(e?.message || "Falha ao criar sensor")
                 } finally {
                   setSaving(false)
                 }
               }}>
                 <Save className="w-4 h-4 mr-2" /> Salvar
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Tem certeza que deseja excluir o sensor <strong>{deleteConfirm.name}</strong>?
+                Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={removeItem}
+                  disabled={saving}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {saving ? "Excluindo..." : "Excluir"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

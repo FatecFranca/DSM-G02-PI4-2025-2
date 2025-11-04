@@ -11,7 +11,8 @@ import {
     MapPin,
     Menu,
     Wrench,
-    X
+    X,
+    Activity
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -34,6 +35,11 @@ export default function AdminLayout({
             icon: Home
         },
         {
+            name: "Estacionamentos",
+            href: "/admin/estacionamentos",
+            icon: Car
+        },
+        {
             name: "Vagas",
             href: "/admin/vagas",
             icon: MapPin
@@ -52,7 +58,12 @@ export default function AdminLayout({
             name: "Sensores",
             href: "/admin/sensores  ",
             icon: Wrench
-        },  
+        },
+        {
+            name: "Informações de Sensores",
+            href: "/admin/informacoes-sensores",
+            icon: Activity
+        },
         {
             name: "Contato",
             href: "/admin/contato",
@@ -65,18 +76,6 @@ export default function AdminLayout({
         router.push("/login")
     }
 
-    // Verificar se o usuário está autenticado e é admin
-    useEffect(() => {
-        if (!user) {
-            router.push("/login")
-            return
-        }
-        
-        if (user.role !== "admin") {
-            router.push("/")
-            return
-        }
-    }, [user, router])
 
     // Mostrar loading enquanto verifica autenticação
     if (isLoading) {

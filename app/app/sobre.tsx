@@ -88,7 +88,6 @@ export default function SobrePage() {
                             <Text style={styles.modalBold}>• Sistema de Reservas:</Text> Faça reservas de vagas com data e horário específicos{'\n\n'}
                             <Text style={styles.modalBold}>• Minhas Reservas:</Text> Acompanhe todas as suas reservas ativas e históricas{'\n\n'}
                             <Text style={styles.modalBold}>• Filtros e Busca:</Text> Encontre vagas por status, setor ou número{'\n\n'}
-                            <Text style={styles.modalBold}>• Notificações:</Text> Receba alertas sobre suas reservas{'\n\n'}
                             <Text style={styles.modalBold}>• Perfil Completo:</Text> Gerencie suas informações pessoais e veículo{'\n\n'}
                             <Text style={styles.modalBold}>• Autenticação Segura:</Text> Login com email e senha{'\n\n'}
                             <Text style={styles.modalBold}>• Interface Intuitiva:</Text> Design moderno e fácil de usar
