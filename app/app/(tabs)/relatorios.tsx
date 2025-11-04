@@ -113,12 +113,6 @@ export default function RelatoriosPage() {
         return Math.round((stats.parkingSlots.occupied / total) * 100);
     }, [stats]);
 
-    const periodOptions = [
-        { label: "Última Semana", value: "week" },
-        { label: "Último Mês", value: "month" },
-        { label: "Último Trimestre", value: "quarter" },
-        { label: "Último Ano", value: "year" },
-    ];
 
 
     if (loading) {
@@ -148,14 +142,6 @@ export default function RelatoriosPage() {
                         </View>
                     </View>
                     <View style={styles.headerActions}>
-                        <View style={styles.filterWrapper}>
-                            <FilterPicker
-                                value={selectedPeriod}
-                                onValueChange={setSelectedPeriod}
-                                options={periodOptions}
-                                placeholder="Período"
-                            />
-                        </View>
                     </View>
                 </View>
 
