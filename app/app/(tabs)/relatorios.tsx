@@ -334,25 +334,6 @@ export default function RelatoriosPage() {
                         </View>
                     </Card>
                 </View>
-
-                {/* Export Options */}
-                <Card style={styles.exportCard}>
-                    <Text style={styles.exportTitle}>Exportar Relatórios</Text>
-                    <View style={styles.exportOptions}>
-                        <TouchableOpacity style={styles.exportOption} activeOpacity={0.7}>
-                            <Ionicons name="document-text" size={20} color="#6B7280" />
-                            <Text style={styles.exportOptionText}>Relatório de Ocupação (PDF)</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.exportOption} activeOpacity={0.7}>
-                            <Ionicons name="grid" size={20} color="#6B7280" />
-                            <Text style={styles.exportOptionText}>Relatório de Slots (Excel)</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.exportOption} activeOpacity={0.7}>
-                            <Ionicons name="mail" size={20} color="#6B7280" />
-                            <Text style={styles.exportOptionText}>Relatório de Mensagens (CSV)</Text>
-                        </TouchableOpacity>
-                    </View>
-                </Card>
             </ScrollView>
         </SafeAreaView>
     );

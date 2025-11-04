@@ -8,14 +8,6 @@ export interface SlotData {
     updatedAt: string
 }
 
-export interface SensorData {
-    id: string
-    sensorId: string
-    parkingSlotId?: string
-    value?: string | number | boolean
-    createdAt: string
-}
-
 export interface StatisticsResult {
     mean: number
     median: number
@@ -102,7 +94,6 @@ export function calculateStatistics(data: number[]): StatisticsResult {
     const range = max - min
 
     // Assimetria (Skewness)
-    // Usando a fórmula de assimetria de Pearson
     const skewness = data.length > 2 && standardDeviation > 0
         ? data.reduce((sum, val) => {
             const z = (val - mean) / standardDeviation
@@ -111,7 +102,6 @@ export function calculateStatistics(data: number[]): StatisticsResult {
         : 0
 
     // Curtose (Kurtosis)
-    // Curtose excesso (em relação à distribuição normal)
     const kurtosis = data.length > 3 && standardDeviation > 0
         ? (data.reduce((sum, val) => {
             const z = (val - mean) / standardDeviation
@@ -119,25 +109,23 @@ export function calculateStatistics(data: number[]): StatisticsResult {
         }, 0) / data.length) - 3
         : 0
 
-    // Probabilidades (distribuição cumulativa e percentil)
+    // Probabilidades
     const probability = {
         cumulative: Math.max(0, Math.min(1, data.filter(val => val <= mean).length / data.length)),
         percentile: max > 0 ? Math.max(0, Math.min(100, (mean / max) * 100)) : 0
     }
 
-    // Regressão Linear Simples (y = ax + b)
-    // Usando os índices como x e os valores como y
+    // Regressão Linear Simples
     const n = data.length
-    const sumX = (n * (n - 1)) / 2 // Soma dos índices de 0 a n-1
+    const sumX = (n * (n - 1)) / 2
     const sumY = data.reduce((sum, val) => sum + val, 0)
     const sumXY = data.reduce((sum, val, index) => sum + index * val, 0)
-    const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6 // Soma dos quadrados dos índices
-    const sumY2 = data.reduce((sum, val) => sum + val * val, 0)
+    const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6
     
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
     const intercept = (sumY - slope * sumX) / n
     
-    // R² (coeficiente de determinação)
+    // R²
     const yMean = mean
     const ssRes = data.reduce((sum, val, index) => {
         const predicted = slope * index + intercept
@@ -152,8 +140,8 @@ export function calculateStatistics(data: number[]): StatisticsResult {
         rSquared: isNaN(rSquared) ? 0 : Math.max(0, Math.min(1, rSquared))
     }
 
-    // Inferência Estatística (Intervalo de Confiança de 95%)
-    const zScore = 1.96 // Para 95% de confiança
+    // Inferência Estatística
+    const zScore = 1.96
     const marginOfError = standardDeviation > 0 && n > 1
         ? zScore * (standardDeviation / Math.sqrt(n))
         : 0
@@ -186,7 +174,6 @@ export function calculateStatistics(data: number[]): StatisticsResult {
 
 // Função para calcular estatísticas de ocupação por período
 export function calculateOccupancyByPeriod(slots: SlotData[], period: 'hour' | 'day' | 'week' = 'day') {
-    const now = new Date()
     const periods: { [key: string]: { occupied: number; total: number } } = {}
     
     slots.forEach(slot => {

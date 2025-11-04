@@ -289,21 +289,6 @@ export default function RelatoriosPage() {
                 </div>
             </div>
 
-            {/* Export Options */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Exportar Relatórios</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button variant="outline" size="md" icon="none" className="justify-start">
-                        Relatório de Ocupação (PDF)
-                    </Button>
-                    <Button variant="outline" size="md" icon="none" className="justify-start">
-                        Relatório de Slots (Excel)
-                    </Button>
-                    <Button variant="outline" size="md" icon="none" className="justify-start">
-                        Relatório de Mensagens (CSV)
-                    </Button>
-                </div>
-            </div>
             {loading && (
                 <div className="text-center text-gray-500">Carregando dados...</div>
             )}

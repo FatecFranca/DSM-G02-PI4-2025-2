@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect, useMemo } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import ApiService, { Parking, ParkingSlot } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { VictoryBar, VictoryChart, VictoryAxis, VictoryTheme, VictoryPie, VictoryLine } from "victory-native";
 
 import StatCard from '@/components/dashboard/StatCard';
 import StatisticsTable from '@/components/dashboard/StatisticsTable';
+import StatisticsCards from '@/components/dashboard/StatisticsCards';
 import Card from '@/components/ui/Card';
+import { calculateStatistics, calculateParkingStats, calculateTrends } from '../../lib/statistics';
 
 interface ParkingStat {
     parkingId: string;
@@ -111,57 +114,7 @@ export default function DashboardScreen() {
         });
     }, [parkings, slots]);
 
-    const alerts = [
-        {
-            id: 1,
-            type: 'warning' as const,
-            message: 'Vaga B03 em manutenção há 2 horas',
-            time: '5 min atrás'
-        },
-        {
-            id: 2,
-            type: 'info' as const,
-            message: 'Manutenção programada para hoje às 22h',
-            time: '1 hora atrás'
-        },
-        {
-            id: 3,
-            type: 'error' as const,
-            message: 'Sensor da vaga A15 com falha',
-            time: '2 horas atrás'
-        }
-    ];
 
-    const quickActions = [
-        {
-            id: '1',
-            title: 'Nova Reserva',
-            icon: 'calendar' as keyof typeof Ionicons.glyphMap,
-            color: 'primary' as const,
-            onPress: () => Alert.alert('Nova Reserva', 'Funcionalidade em desenvolvimento')
-        },
-        {
-            id: '2',
-            title: 'Relatório',
-            icon: 'bar-chart' as keyof typeof Ionicons.glyphMap,
-            color: 'secondary' as const,
-            onPress: () => Alert.alert('Relatório', 'Funcionalidade em desenvolvimento')
-        },
-        {
-            id: '3',
-            title: 'Configurações',
-            icon: 'settings' as keyof typeof Ionicons.glyphMap,
-            color: 'secondary' as const,
-            onPress: () => Alert.alert('Configurações', 'Funcionalidade em desenvolvimento')
-        },
-        {
-            id: '4',
-            title: 'Suporte',
-            icon: 'help-circle' as keyof typeof Ionicons.glyphMap,
-            color: 'secondary' as const,
-            onPress: () => Alert.alert('Suporte', 'Funcionalidade em desenvolvimento')
-        }
-    ];
 
     const stats = useMemo(() => {
         if (!statsData) {
@@ -201,12 +154,17 @@ export default function DashboardScreen() {
         ];
     }, [statsData]);
 
-    // Dados para gráficos
+    // Dados para gráficos e estatísticas
     const chartData = useMemo(() => {
         const total = slots.length;
         const livre = slots.filter(s => s.isActive && s.isAvailable).length;
         const ocupada = slots.filter(s => s.isActive && !s.isAvailable).length;
         const manutencao = slots.filter(s => !s.isActive).length;
+
+        // Calcular estatísticas avançadas
+        const occupancyRates = parkingStats.map(stat => stat.occupancyRate);
+        const occupancyStats = calculateStatistics(occupancyRates);
+        const occupancyTrend = calculateTrends(occupancyRates);
 
         return {
             pieData: [
@@ -220,7 +178,9 @@ export default function DashboardScreen() {
                 total: stat.total,
                 ocupadas: stat.occupied,
                 livres: stat.available
-            }))
+            })),
+            occupancyStats,
+            occupancyTrend
         };
     }, [slots, parkingStats]);
 
@@ -276,67 +236,218 @@ export default function DashboardScreen() {
                     ))}
                 </View>
 
+                {/* Statistics Cards */}
+                <View style={styles.statisticsCardsContainer}>
+                    <StatisticsCards 
+                        stats={chartData.occupancyStats} 
+                        title="Estatísticas de Ocupação"
+                        trend={chartData.occupancyTrend}
+                    />
+                </View>
+
                 {/* Statistics Table */}
                 <StatisticsTable stats={parkingStats} />
 
                 {/* Charts Section */}
                 <View style={styles.chartsContainer}>
-                    {/* Distribution Chart */}
+                    {/* Distribution Chart (Pizza) */}
                     <Card style={styles.chartCard}>
                         <Text style={styles.chartTitle}>Distribuição de Status das Vagas</Text>
                         <View style={styles.pieChartContainer}>
-                            {chartData.pieData.map((item, index) => (
-                                <View key={index} style={styles.pieChartItem}>
-                                    <View style={[styles.pieChartColor, { backgroundColor: item.color }]} />
-                                    <Text style={styles.pieChartLabel}>{item.name}: {item.value}</Text>
+                            {chartData.pieData.length > 0 ? (
+                                <>
+                                    <VictoryPie
+                                        data={chartData.pieData.map((item) => ({
+                                            x: item.name,
+                                            y: item.value,
+                                        }))}
+                                        colorScale={chartData.pieData.map(item => item.color)}
+                                        innerRadius={50}
+                                        labelRadius={(props) => (typeof props.innerRadius === 'number' ? props.innerRadius + 20 : 70)}
+                                        style={{
+                                            labels: { fill: '#fff', fontSize: 12, fontWeight: 'bold' }
+                                        }}
+                                        animate={{
+                                            duration: 800,
+                                            easing: 'bounce'
+                                        }}
+                                    />
+                                    <View style={styles.pieChartLegend}>
+                                        {chartData.pieData.map((item, index) => {
+                                            const total = chartData.pieData.reduce((sum, d) => sum + d.value, 0);
+                                            const percentage = total > 0 ? (item.value / total) * 100 : 0;
+                                            return (
+                                                <View key={index} style={styles.legendItem}>
+                                                    <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                                                    <Text style={styles.legendLabel}>{item.name}</Text>
+                                                    <Text style={styles.legendValue}>{item.value} ({percentage.toFixed(1)}%)</Text>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                </>
+                            ) : (
+                                <View style={styles.emptyChartContainer}>
+                                    <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
                                 </View>
-                            ))}
+                            )}
                         </View>
                     </Card>
 
-                    {/* Occupancy by Parking Chart */}
+                    {/* Occupancy by Parking Chart (Barras) */}
                     <Card style={styles.chartCard}>
                         <Text style={styles.chartTitle}>Taxa de Ocupação por Estacionamento</Text>
                         <View style={styles.barChartContainer}>
-                            {chartData.barData.map((item, index) => (
-                                <View key={index} style={styles.barChartItem}>
-                                    <Text style={styles.barChartLabel}>{item.estacionamento}</Text>
-                                    <View style={styles.barChartBar}>
-                                        <View 
-                                            style={[
-                                                styles.barChartFill, 
-                                                { width: `${Math.min(item.ocupacao, 100)}%` }
-                                            ]} 
+                            {chartData.barData.length > 0 ? (
+                                <>
+                                    <VictoryChart
+                                        theme={VictoryTheme.material}
+                                        domainPadding={{ x: 20 }}
+                                        height={250}
+                                    >
+                                        <VictoryAxis
+                                            tickFormat={(t: string) => t.substring(0, 3)}
+                                            style={{
+                                                axis: { stroke: '#ccc' },
+                                                ticks: { stroke: '#ccc' },
+                                                tickLabels: { fontSize: 10, fill: '#666' }
+                                            }}
                                         />
+                                        <VictoryAxis
+                                            dependentAxis
+                                            style={{
+                                                axis: { stroke: '#ccc' },
+                                                ticks: { stroke: '#ccc' },
+                                                tickLabels: { fontSize: 10, fill: '#666' }
+                                            }}
+                                        />
+                                        <VictoryBar
+                                            data={chartData.barData.map(item => ({
+                                                x: item.estacionamento.substring(0, 10),
+                                                y: item.ocupacao,
+                                                fill: item.ocupacao >= 80 ? '#EF4444' : item.ocupacao >= 60 ? '#F59E0B' : '#10B981',
+                                            }))}
+                                            style={{
+                                                data: {
+                                                    fill: ({ datum }) => datum.fill,
+                                                }
+                                            }}
+                                            animate={{
+                                                duration: 800,
+                                                easing: 'bounce'
+                                            }}
+                                        />
+                                    </VictoryChart>
+                                    <View style={styles.barChartLabels}>
+                                        {chartData.barData.map((item, index) => (
+                                            <View key={index} style={styles.barChartLabelItem}>
+                                                <Text style={styles.barChartLabel} numberOfLines={1}>
+                                                    {item.estacionamento}
+                                                </Text>
+                                                <Text style={styles.barChartSubLabel}>
+                                                    {item.ocupadas}/{item.total} - {item.ocupacao}%
+                                                </Text>
+                                            </View>
+                                        ))}
                                     </View>
-                                    <Text style={styles.barChartValue}>{item.ocupacao}%</Text>
+                                </>
+                            ) : (
+                                <View style={styles.emptyChartContainer}>
+                                    <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
                                 </View>
-                            ))}
+                            )}
                         </View>
                     </Card>
+
+                    {/* Line Chart - Tendência de Ocupação */}
+                    {chartData.barData.length > 0 && (
+                        <Card style={styles.chartCard}>
+                            <Text style={styles.chartTitle}>Tendência de Ocupação</Text>
+                            <View style={styles.lineChartContainer}>
+                                <VictoryChart
+                                    theme={VictoryTheme.material}
+                                    height={250}
+                                >
+                                    <VictoryAxis
+                                        tickFormat={(t: any, i: number) => chartData.barData[i]?.estacionamento.substring(0, 3) || ''}
+                                        style={{
+                                            axis: { stroke: '#ccc' },
+                                            ticks: { stroke: '#ccc' },
+                                            tickLabels: { fontSize: 10, fill: '#666' }
+                                        }}
+                                    />
+                                    <VictoryAxis
+                                        dependentAxis
+                                        style={{
+                                            axis: { stroke: '#ccc' },
+                                            ticks: { stroke: '#ccc' },
+                                            tickLabels: { fontSize: 10, fill: '#666' }
+                                        }}
+                                    />
+                                    <VictoryLine
+                                        data={chartData.barData.map((item, index) => ({
+                                            x: index + 1,
+                                            y: item.ocupacao,
+                                        }))}
+                                        style={{
+                                            data: { stroke: '#3b82f6', strokeWidth: 2 },
+                                            parent: { border: '1px solid #ccc' }
+                                        }}
+                                        animate={{
+                                            duration: 800,
+                                            easing: 'bounce'
+                                        }}
+                                    />
+                                </VictoryChart>
+                            </View>
+                        </Card>
+                    )}
+
+                    {/* Progress Chart - Ocupação Geral */}
+                    {chartData.pieData.length > 0 && (
+                        <Card style={styles.chartCardLast}>
+                            <Text style={styles.chartTitle}>Ocupação Geral do Sistema</Text>
+                            <View style={styles.progressChartContainer}>
+                                {(() => {
+                                    const total = chartData.pieData.reduce((sum, d) => sum + d.value, 0);
+                                    const ocupada = chartData.pieData.find(d => d.name === 'Ocupada')?.value || 0;
+                                    const ocupacaoGeral = total > 0 ? ocupada / total : 0;
+                                    
+                                    return (
+                                        <>
+                                            <VictoryPie
+                                                data={[
+                                                    { x: 'Ocupadas', y: ocupacaoGeral * 100 },
+                                                    { x: 'Livres', y: (1 - ocupacaoGeral) * 100 },
+                                                ]}
+                                                colorScale={['#3b82f6', '#e5e7eb']}
+                                                innerRadius={80}
+                                                width={250}
+                                                height={250}
+                                                style={{
+                                                    labels: { fill: 'transparent' }
+                                                }}
+                                                animate={{
+                                                    duration: 800,
+                                                    easing: 'bounce'
+                                                }}
+                                            />
+                                            <View style={styles.progressChartCenter}>
+                                                <Text style={styles.progressChartText}>
+                                                    {(ocupacaoGeral * 100).toFixed(1)}%
+                                                </Text>
+                                                <Text style={styles.progressChartSubText}>
+                                                    das vagas ocupadas
+                                                </Text>
+                                            </View>
+                                        </>
+                                    );
+                                })()}
+                            </View>
+                        </Card>
+                    )}
                 </View>
 
-                {/* Alerts Section */}
-                <View style={styles.alertsContainer}>
-                    <Card style={styles.alertCard}>
-                        <Text style={styles.alertTitle}>Alertas</Text>
-                        <View style={styles.alertsList}>
-                            {alerts.map((alert) => (
-                                <View key={alert.id} style={styles.alertItem}>
-                                    <Ionicons 
-                                        name={alert.type === 'warning' ? 'warning' : alert.type === 'error' ? 'close-circle' : 'information-circle'} 
-                                        size={20} 
-                                        color={alert.type === 'warning' ? '#F59E0B' : alert.type === 'error' ? '#EF4444' : '#3B82F6'} 
-                                    />
-                                    <View style={styles.alertContent}>
-                                        <Text style={styles.alertMessage}>{alert.message}</Text>
-                                        <Text style={styles.alertTime}>{alert.time}</Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    </Card>
-                </View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -426,12 +537,20 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
     },
+    statisticsCardsContainer: {
+        paddingHorizontal: 16,
+        marginBottom: 16,
+    },
     chartsContainer: {
         padding: 16,
-        gap: 16,
     },
     chartCard: {
         padding: 20,
+        marginBottom: 16,
+    },
+    chartCardLast: {
+        padding: 20,
+        marginBottom: 0,
     },
     chartTitle: {
         fontSize: 18,
@@ -440,53 +559,119 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     pieChartContainer: {
-        gap: 12,
+        marginTop: 8,
+        alignItems: 'center',
     },
-    pieChartItem: {
+    pieChart: {
+        height: 250,
+        width: '100%',
+        alignItems: 'center',
+    },
+    pieChartLegend: {
+        marginTop: 16,
+        width: '100%',
+    },
+    legendItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        marginBottom: 8,
     },
-    pieChartColor: {
+    legendColor: {
         width: 16,
         height: 16,
         borderRadius: 8,
+        marginRight: 8,
     },
-    pieChartLabel: {
+    legendLabel: {
         fontSize: 14,
+        fontWeight: '500',
+        color: '#1F2937',
+        flex: 1,
+    },
+    legendValue: {
+        fontSize: 14,
+        fontWeight: '600',
         color: '#6B7280',
     },
     barChartContainer: {
-        gap: 12,
+        marginTop: 8,
     },
-    barChartItem: {
+    barChart: {
+        width: '100%',
+    },
+    barChartLabels: {
+        marginTop: 12,
         flexDirection: 'row',
+        justifyContent: 'space-around',
+        flexWrap: 'wrap',
+    },
+    barChartLabelItem: {
         alignItems: 'center',
-        gap: 12,
+        marginBottom: 8,
+        minWidth: 80,
     },
     barChartLabel: {
         fontSize: 12,
-        color: '#6B7280',
-        minWidth: 80,
-    },
-    barChartBar: {
-        flex: 1,
-        height: 8,
-        backgroundColor: '#E5E7EB',
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    barChartFill: {
-        height: '100%',
-        backgroundColor: '#3B82F6',
-        borderRadius: 4,
-    },
-    barChartValue: {
-        fontSize: 12,
         fontWeight: '600',
         color: '#1F2937',
-        minWidth: 40,
-        textAlign: 'right',
+        textAlign: 'center',
+    },
+    barChartSubLabel: {
+        fontSize: 10,
+        color: '#6B7280',
+        marginTop: 2,
+        textAlign: 'center',
+    },
+    lineChartContainer: {
+        marginTop: 8,
+    },
+    lineChart: {
+        height: 200,
+        width: '100%',
+    },
+    lineChartLabels: {
+        marginTop: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    lineChartLabel: {
+        fontSize: 11,
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    progressChartContainer: {
+        marginTop: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
+    progressChartCenter: {
+        position: 'absolute',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    progressChartText: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#3b82f6',
+        textAlign: 'center',
+    },
+    progressChartSubText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#6B7280',
+        textAlign: 'center',
+        marginTop: 4,
+    },
+    emptyChartContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyChartText: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontStyle: 'italic',
     },
     alertsContainer: {
         padding: 16,
