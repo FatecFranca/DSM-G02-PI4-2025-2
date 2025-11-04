@@ -7,22 +7,19 @@ const prisma = new PrismaClient();
 class ActivePlatesController {
   async getActivePlates(req: Request, res: Response) {
     try {
-      // Hora atual do servidor
+      // Hora atual em UTC
       const now = new Date();
 
-      // Ajustar para horário de Brasília (UTC-3)
-      const nowBr = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-
       console.log("===================================");
-      console.log("🔹 Hora local do servidor:", now);
-      console.log("🔹 Hora em Brasília (UTC-3) usada para consulta:", nowBr);
+      console.log("🔹 Hora local do servidor:", now.toLocaleString());
+      console.log("🔹 Hora UTC usada para consulta:", now.toISOString());
       console.log("===================================");
 
-      // Buscar reservas ativas no horário de Brasília
+      // Buscar reservas ativas no momento atual (em UTC)
       const activeReservations = await prisma.reservation.findMany({
         where: {
-          startTime: { lte: nowBr },
-          endTime: { gt: nowBr },
+          startTime: { lte: now },
+          endTime: { gt: now },
         },
         select: {
           vehiclePlate: true,
@@ -52,8 +49,8 @@ class ActivePlatesController {
         console.log("  Slot ID:", r.parkingSlotId);
         console.log("  Slot Number:", r.parkingSlot?.number);
         console.log("  Parking Name:", r.parkingSlot?.parking?.name);
-        console.log("  Start Time:", r.startTime);
-        console.log("  End Time:", r.endTime);
+        console.log("  Start Time:", r.startTime.toISOString());
+        console.log("  End Time:", r.endTime.toISOString());
       });
       console.log("===================================");
 
