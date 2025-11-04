@@ -63,10 +63,33 @@ type Reservation = {
 }
 
 // Função para obter o último dado de sensor de uma vaga
+// Como o backend já retorna apenas o último dado de cada vaga, apenas buscamos pelo slotId
 function getLatestSensorData(slotId: string, sensorsData: SensorsData[]): SensorsData | null {
-  const slotData = sensorsData.filter(sd => sd.sensor?.parkingSlot?.id === slotId)
-  if (slotData.length === 0) return null
-  return slotData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+  // O backend já retorna apenas um registro por vaga (o mais recente)
+  // Então apenas precisamos encontrar o registro correspondente à vaga
+  const latestData = sensorsData.find(sd => {
+    const slotIdFromSensor = sd.sensor?.parkingSlot?.id
+    const slotIdDirect = sd.parkingSlotId
+    const matchesSlot = slotIdFromSensor === slotId || slotIdDirect === slotId
+    const hasData = sd.data != null && sd.data !== undefined && sd.data !== ""
+    
+    return matchesSlot && hasData
+  })
+  
+  // Debug
+  if (process.env.NODE_ENV === 'development') {
+    if (latestData) {
+      console.log(`[Vaga ${slotId}] Último dado encontrado:`, {
+        data: latestData.data,
+        createdAt: latestData.createdAt,
+        dataFormatada: new Date(latestData.createdAt).toLocaleString('pt-BR')
+      })
+    } else {
+      console.log(`[Vaga ${slotId}] Nenhum dado encontrado. Total de dados disponíveis:`, sensorsData.length)
+    }
+  }
+  
+  return latestData || null
 }
 
 // Função para verificar se há reserva ativa para uma vaga
@@ -87,27 +110,42 @@ function mapStatus(slot: ParkingSlot, sensorsData: SensorsData[], reservations: 
   // Buscar último dado do sensor
   const latestData = getLatestSensorData(slot.id, sensorsData)
   
-  // Se não houver dados de sensor, usar isAvailable como fallback
-  if (!latestData) {
-    const hasReservation = hasActiveReservation(slot.id, reservations)
-    if (hasReservation && slot.isAvailable) return "reservada"
-    return slot.isAvailable ? "livre" : "ocupada"
-  }
-
-  // Determinar status baseado no dado do sensor
-  const sensorValue = latestData.data?.toUpperCase()
-  const hasReservation = hasActiveReservation(slot.id, reservations)
-
-  if (sensorValue === "PRESENT") {
-    return "ocupada"
-  } else if (sensorValue === "FREE") {
-    if (hasReservation) {
-      return "reservada"
+  // Se houver dados de sensor, priorizar o valor do sensor
+  if (latestData) {
+    // Normalizar o valor do sensor (remover espaços, converter para maiúsculas)
+    const sensorValue = String(latestData.data || "").toUpperCase().trim()
+    
+    // Debug: log temporário para verificar o que está sendo comparado
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Vaga ${slot.number}] Último dado:`, {
+        data: latestData.data,
+        normalized: sensorValue,
+        createdAt: latestData.createdAt,
+        isPresent: sensorValue === "PRESENT"
+      })
     }
-    return "livre"
+    
+    // Se o sensor detecta presença, sempre retorna ocupada (independente de reserva)
+    // Esta verificação deve ser a PRIMEIRA e não pode ser sobrescrita
+    if (sensorValue === "PRESENT") {
+      return "ocupada"
+    }
+    
+    // Se o sensor detecta livre, verificar se há reserva
+    if (sensorValue === "FREE") {
+      const hasReservation = hasActiveReservation(slot.id, reservations)
+      if (hasReservation) {
+        return "reservada"
+      }
+      return "livre"
+    }
   }
-
-  // Fallback
+  
+  // Se não houver dados de sensor ou valor desconhecido, usar fallback
+  const hasReservation = hasActiveReservation(slot.id, reservations)
+  if (hasReservation && slot.isAvailable) {
+    return "reservada"
+  }
   return slot.isAvailable ? "livre" : "ocupada"
 }
 
@@ -155,14 +193,28 @@ export default function AdminVagasPage() {
       const [parkingsData, slotsData, sensorsDataResponse, reservationsData] = await Promise.all([
         api.get<Parking[]>("/parkings", { cache: "no-store" }),
         api.get<ParkingSlot[] | { data: ParkingSlot[] }>("/parking-slots", { cache: "no-store" }),
-        api.get<SensorsData[] | { data: SensorsData[] }>("/sensors-data", { cache: "no-store" }),
+        // Buscar apenas o último dado de cada vaga (endpoint otimizado)
+        api.get<SensorsData[]>("/sensors-data/latest-by-slot", { cache: "no-store" }),
         api.get<Reservation[]>("/reservations", { cache: "no-store" }).catch(() => [] as Reservation[]),
       ])
       setParkings(parkingsData)
       const slots = Array.isArray(slotsData) ? slotsData : (slotsData as any).data || []
       setSlots(Array.isArray(slots) ? slots : [])
-      const sensors = Array.isArray(sensorsDataResponse) ? sensorsDataResponse : (sensorsDataResponse as any).data || []
-      setSensorsData(Array.isArray(sensors) ? sensors : [])
+      // O novo endpoint já retorna apenas o último dado de cada vaga como array direto
+      const sensorsArray = Array.isArray(sensorsDataResponse) ? sensorsDataResponse : []
+      
+      // Debug: verificar dados recebidos
+      if (process.env.NODE_ENV === 'development' && sensorsArray.length > 0) {
+        const sample = sensorsArray.slice(0, 5)
+        console.log('[Refresh] Últimos dados de sensores por vaga (amostra):', sample.map(s => ({
+          id: s.id,
+          data: s.data,
+          createdAt: s.createdAt,
+          slotId: s.sensor?.parkingSlot?.id || s.parkingSlotId || 'N/A'
+        })))
+      }
+      
+      setSensorsData(sensorsArray)
       setReservations(Array.isArray(reservationsData) ? reservationsData : [])
     } catch (e: any) {
       setError(e?.message || "Falha ao carregar vagas")

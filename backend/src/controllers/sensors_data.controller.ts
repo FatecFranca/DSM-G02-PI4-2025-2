@@ -97,6 +97,15 @@ class SensorsDataController {
             return handleError(res, err as Error, "Erro ao buscar os dados dos sensores ativos.", 400);
         }
     }
+
+    async getLatestByParkingSlot(req: Request, res: Response) {
+        try {
+            const latestData = await SensorsDataService.getLatestByParkingSlot();
+            return res.json(latestData);
+        } catch (err) {
+            return handleError(res, err as Error, "Erro ao buscar os últimos dados dos sensores por vaga.", 400);
+        }
+    }
 }
 
 export default new SensorsDataController();

@@ -416,6 +416,50 @@ class SensorsDataService {
             totalItems: totalSensorsData,
         };
     }
+
+    async getLatestByParkingSlot() {
+        // Buscar todos os dados de sensores ordenados por data (mais recente primeiro)
+        const allData = await prisma.sensorsData.findMany({
+            include: {
+                sensor: {
+                    select: {
+                        id: true,
+                        name: true,
+                        type: true,
+                        parkingSlot: {
+                            select: {
+                                id: true,
+                                number: true,
+                                parking: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        address: true,
+                                        city: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        // Agrupar por parkingSlotId e pegar apenas o mais recente de cada vaga
+        const latestBySlot = new Map<string, typeof allData[0]>();
+        
+        for (const data of allData) {
+            const slotId = data.sensor?.parkingSlot?.id;
+            if (slotId && !latestBySlot.has(slotId)) {
+                latestBySlot.set(slotId, data);
+            }
+        }
+
+        return Array.from(latestBySlot.values());
+    }
 }
 
 export default new SensorsDataService();

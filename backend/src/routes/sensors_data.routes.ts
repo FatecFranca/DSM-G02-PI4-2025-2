@@ -85,6 +85,25 @@ router.get("/active", SensorsDataController.getActive);
 
 /**
  * @swagger
+ * /sensors-data/latest-by-slot:
+ *   get:
+ *     summary: Buscar o último dado de sensor de cada vaga
+ *     tags: [Sensors Data]
+ *     description: Retorna apenas o registro mais recente de cada vaga de estacionamento
+ *     responses:
+ *       200:
+ *         description: Lista com o último dado de cada vaga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/SensorsData'
+ */
+router.get("/latest-by-slot", SensorsDataController.getLatestByParkingSlot);
+
+/**
+ * @swagger
  * /sensors-data/sensor/{sensorId}:
  *   get:
  *     summary: Buscar dados por sensor
