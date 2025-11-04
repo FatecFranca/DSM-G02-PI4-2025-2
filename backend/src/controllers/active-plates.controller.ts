@@ -11,6 +11,11 @@ class ActivePlatesController {
       const now = new Date();
       const nowUTC = new Date(now.toISOString()); // garante UTC
 
+      console.log("===================================");
+      console.log("🔹 Hora local do servidor:", now);
+      console.log("🔹 Hora em UTC usada para consulta:", nowUTC);
+      console.log("===================================");
+
       // Buscar reservas ativas no momento atual (em UTC)
       const activeReservations = await prisma.reservation.findMany({
         where: {
@@ -38,6 +43,18 @@ class ActivePlatesController {
         },
       });
 
+      console.log("🔹 Reservas encontradas:", activeReservations.length);
+      activeReservations.forEach((r, idx) => {
+        console.log(`Reserva ${idx + 1}:`);
+        console.log("  Plate:", r.vehiclePlate);
+        console.log("  Slot ID:", r.parkingSlotId);
+        console.log("  Slot Number:", r.parkingSlot?.number);
+        console.log("  Parking Name:", r.parkingSlot?.parking?.name);
+        console.log("  Start Time:", r.startTime);
+        console.log("  End Time:", r.endTime);
+      });
+      console.log("===================================");
+
       // Mapear para retorno com informações adicionais
       const plates = activeReservations.map(reservation => ({
         plate: reservation.vehiclePlate,
@@ -50,6 +67,7 @@ class ActivePlatesController {
 
       return res.json(plates);
     } catch (err) {
+      console.error("❌ Erro no getActivePlates:", err);
       return handleError(res, err as Error, "Erro ao buscar placas ativas.");
     }
   }
