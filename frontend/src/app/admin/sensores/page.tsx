@@ -7,6 +7,14 @@ import api from "@/lib/api"
 
 type Parking = { id: string; name: string }
 
+type ParkingSlot = {
+  id: string
+  parkingId: string
+  number: number
+  isAvailable: boolean
+  isActive: boolean
+}
+
 type Sensor = {
   id: string
   parkingSlotId?: string
@@ -48,6 +56,7 @@ type ParkingSensorData = {
 export default function AdminSensoresPage() {
   const [tab, setTab] = useState<"sensors" | "parkingSensors">("sensors")
   const [parkings, setParkings] = useState<Parking[]>([])
+  const [parkingSlots, setParkingSlots] = useState<ParkingSlot[]>([])
 
   const [sensors, setSensors] = useState<Sensor[]>([])
   const [sensorsLoading, setSensorsLoading] = useState(false)
@@ -93,12 +102,16 @@ export default function AdminSensoresPage() {
     setSensorsError(null)
     setPsError(null)
     try {
-      const [p, s, ps] = await Promise.all([
+      const [p, slots, s, ps] = await Promise.all([
         api.get<Parking[]>("/parkings", { cache: "no-store" }),
+        api.get<ParkingSlot[] | { data: ParkingSlot[] }>("/parking-slots", { cache: "no-store" }),
         api.get<Sensor[]>("/sensors", { cache: "no-store" }),
         api.get<ParkingSensor[]>("/parking-sensors", { cache: "no-store" }),
       ])
       setParkings(p)
+      // Lidar com resposta paginada ou array direto
+      const slotsData = Array.isArray(slots) ? slots : (slots as any).data || []
+      setParkingSlots(Array.isArray(slotsData) ? slotsData : [])
       setSensors(s)
       setParkingSensors(ps)
     } catch (e: any) {
@@ -491,7 +504,7 @@ export default function AdminSensoresPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Escopo</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2" value={createForm.scope} onChange={(e) => setCreateForm(f => ({ ...f, scope: e.target.value as any, type: "" }))}>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2" value={createForm.scope} onChange={(e) => setCreateForm(f => ({ ...f, scope: e.target.value as any, type: "", parkingSlotId: "", parkingId: e.target.value === "parkingSensors" ? (parkings[0]?.id || "") : "" }))}>
                     <option value="sensors">Vaga</option>
                     <option value="parkingSensors">Estacionamento</option>
                   </select>
@@ -516,13 +529,18 @@ export default function AdminSensoresPage() {
                       <option value="GAS">GAS</option>
                     </select>
                   ) : (
-                    <input 
+                    <select 
                       key="sensor-type"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent" 
                       value={createForm.type} 
-                      onChange={(e) => setCreateForm(f => ({ ...f, type: e.target.value }))} 
-                      placeholder="IR, TEMPERATURE, ..." 
-                    />
+                      onChange={(e) => setCreateForm(f => ({ ...f, type: e.target.value }))}
+                    >
+                      <option value="">Selecione um tipo...</option>
+                      <option value="IR">IR</option>
+                      <option value="ULTRASONIC">ULTRASONIC</option>
+                      <option value="RFID">RFID</option>
+                      <option value="CAMERA">CAMERA</option>
+                    </select>
                   )}
                 </div>
               </div>
@@ -549,8 +567,22 @@ export default function AdminSensoresPage() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vaga (ID)</label>
-                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2" value={createForm.parkingSlotId} onChange={(e) => setCreateForm(f => ({ ...f, parkingSlotId: e.target.value }))} placeholder="ID da vaga" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vaga</label>
+                  <select 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent" 
+                    value={createForm.parkingSlotId} 
+                    onChange={(e) => setCreateForm(f => ({ ...f, parkingSlotId: e.target.value }))}
+                  >
+                    <option value="">Selecione uma vaga...</option>
+                    {parkingSlots.map(slot => {
+                      const parking = parkings.find(p => p.id === slot.parkingId)
+                      return (
+                        <option key={slot.id} value={slot.id}>
+                          Vaga #{String(slot.number).padStart(2, '0')} - {parking?.name || slot.parkingId}
+                        </option>
+                      )
+                    })}
+                  </select>
                 </div>
               )}
               <div>

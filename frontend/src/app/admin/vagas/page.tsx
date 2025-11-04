@@ -2,7 +2,7 @@
 
 import ParkingSpot, { SpotStatus } from "@/components/parking/ParkingSpot"
 import Button from "@/components/ui/Button"
-import { Plus, RefreshCcw, Search, Save, Trash2 } from "lucide-react"
+import { Plus, RefreshCcw, Search, Save, Trash2, AlertCircle, X, Activity } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import api from "@/lib/api"
 
@@ -32,20 +32,94 @@ type SensorsData = {
   id: string
   sensorId: string
   parkingSlotId?: string
-  value?: string | number | boolean
+  data: string
+  createdAt: string
+  sensor: {
+    id: string
+    name: string
+    type: string
+    parkingSlot?: {
+      id: string
+      number: number
+      parking: {
+        id: string
+        name: string
+        address: string
+        city: string
+      }
+    }
+  }
+}
+
+type Reservation = {
+  id: string
+  parkingSlotId: string
+  userId: string
+  vehiclePlate: string
+  startTime: string
+  endTime: string
+  status: string
   createdAt: string
 }
 
-function mapStatus(slot: ParkingSlot): SpotStatus {
+// Função para obter o último dado de sensor de uma vaga
+function getLatestSensorData(slotId: string, sensorsData: SensorsData[]): SensorsData | null {
+  const slotData = sensorsData.filter(sd => sd.sensor?.parkingSlot?.id === slotId)
+  if (slotData.length === 0) return null
+  return slotData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+}
+
+// Função para verificar se há reserva ativa para uma vaga
+function hasActiveReservation(slotId: string, reservations: Reservation[]): boolean {
+  const now = new Date()
+  return reservations.some(r => 
+    r.parkingSlotId === slotId &&
+    r.status !== "cancelled" &&
+    new Date(r.startTime) <= now &&
+    new Date(r.endTime) >= now
+  )
+}
+
+function mapStatus(slot: ParkingSlot, sensorsData: SensorsData[], reservations: Reservation[]): SpotStatus {
+  // Se não estiver ativa, sempre retorna manutenção
   if (!slot.isActive) return "manutencao"
+
+  // Buscar último dado do sensor
+  const latestData = getLatestSensorData(slot.id, sensorsData)
+  
+  // Se não houver dados de sensor, usar isAvailable como fallback
+  if (!latestData) {
+    const hasReservation = hasActiveReservation(slot.id, reservations)
+    if (hasReservation && slot.isAvailable) return "reservada"
+    return slot.isAvailable ? "livre" : "ocupada"
+  }
+
+  // Determinar status baseado no dado do sensor
+  const sensorValue = latestData.data?.toUpperCase()
+  const hasReservation = hasActiveReservation(slot.id, reservations)
+
+  if (sensorValue === "PRESENT") {
+    return "ocupada"
+  } else if (sensorValue === "FREE") {
+    if (hasReservation) {
+      return "reservada"
+    }
+    return "livre"
+  }
+
+  // Fallback
   return slot.isAvailable ? "livre" : "ocupada"
 }
 
 export default function AdminVagasPage() {
   const [parkings, setParkings] = useState<Parking[]>([])
   const [slots, setSlots] = useState<ParkingSlot[]>([])
+  const [sensorsData, setSensorsData] = useState<SensorsData[]>([])
+  const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [operationError, setOperationError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   const [statusFilter, setStatusFilter] = useState<SpotStatus | "todas">("todas")
   const [parkingFilter, setParkingFilter] = useState<string>("todos")
@@ -66,54 +140,75 @@ export default function AdminVagasPage() {
   const [slotRecentData, setSlotRecentData] = useState<SensorsData[]>([])
 
   useEffect(() => {
-    refresh()
+    refresh(true) // Primeira carga com loading
+    // Atualizar a cada 1 segundo sem loading
+    const interval = setInterval(() => {
+      refresh(false)
+    }, 1000)
+    return () => clearInterval(interval)
   }, [])
 
-  const refresh = async () => {
-    setLoading(true)
+  const refresh = async (showLoading = false) => {
+    if (showLoading) setLoading(true)
     setError(null)
     try {
-      const [parkingsData, slotsData] = await Promise.all([
+      const [parkingsData, slotsData, sensorsDataResponse, reservationsData] = await Promise.all([
         api.get<Parking[]>("/parkings", { cache: "no-store" }),
-        api.get<ParkingSlot[]>("/parking-slots", { cache: "no-store" }),
+        api.get<ParkingSlot[] | { data: ParkingSlot[] }>("/parking-slots", { cache: "no-store" }),
+        api.get<SensorsData[] | { data: SensorsData[] }>("/sensors-data", { cache: "no-store" }),
+        api.get<Reservation[]>("/reservations", { cache: "no-store" }).catch(() => [] as Reservation[]),
       ])
       setParkings(parkingsData)
-      setSlots(slotsData)
+      const slots = Array.isArray(slotsData) ? slotsData : (slotsData as any).data || []
+      setSlots(Array.isArray(slots) ? slots : [])
+      const sensors = Array.isArray(sensorsDataResponse) ? sensorsDataResponse : (sensorsDataResponse as any).data || []
+      setSensorsData(Array.isArray(sensors) ? sensors : [])
+      setReservations(Array.isArray(reservationsData) ? reservationsData : [])
     } catch (e: any) {
       setError(e?.message || "Falha ao carregar vagas")
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
   const filtered = useMemo(() => {
     return slots.filter((slot) => {
-      const status = mapStatus(slot)
+      const status = mapStatus(slot, sensorsData, reservations)
       const statusOk = statusFilter === "todas" ? true : status === statusFilter
       const parkingOk = parkingFilter === "todos" ? true : slot.parkingId === parkingFilter
       const searchOk = searchTerm === "" ? true : `${slot.number}`.toLowerCase().includes(searchTerm.toLowerCase())
       return statusOk && parkingOk && searchOk
     })
-  }, [slots, statusFilter, parkingFilter, searchTerm])
+  }, [slots, sensorsData, reservations, statusFilter, parkingFilter, searchTerm])
 
   const counts = useMemo(() => {
-    const allStatuses = slots.map(mapStatus)
+    const allStatuses = slots.map(slot => mapStatus(slot, sensorsData, reservations))
     return {
       total: slots.length,
       livre: allStatuses.filter((s) => s === "livre").length,
       ocupada: allStatuses.filter((s) => s === "ocupada").length,
-      reservada: 0,
+      reservada: allStatuses.filter((s) => s === "reservada").length,
       manutencao: allStatuses.filter((s) => s === "manutencao").length,
     }
-  }, [slots])
+  }, [slots, sensorsData, reservations])
 
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Gestão de Vagas</h1>
-        <p className="text-gray-600">Gerencie todas as vagas dos estacionamentos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">Gestão de Vagas</h1>
+            <div className="relative group">
+              <Activity className="w-4 h-4 text-green-500 animate-pulse" />
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Atualizando automaticamente
+              </span>
+            </div>
+          </div>
+          <p className="text-gray-600">Gerencie todas as vagas dos estacionamentos</p>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -179,8 +274,8 @@ export default function AdminVagasPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="secondary" size="sm" onClick={refresh} disabled={loading}>
-              <RefreshCcw className="w-4 h-4 mr-2" /> Atualizar
+            <Button variant="secondary" size="sm" onClick={() => refresh(true)} disabled={loading}>
+              <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Atualizar
             </Button>
             <Button variant="primary" size="sm" onClick={() => { setCreateData({ parkingId: parkings[0]?.id || "", number: "", isActive: true, isAvailable: true }); setIsCreateOpen(true) }}>
               <Plus className="w-4 h-4 mr-2" /> Adicionar Vaga
@@ -197,6 +292,7 @@ export default function AdminVagasPage() {
             {[
               { label: "Livre", className: "bg-green-500" },
               { label: "Ocupada", className: "bg-red-500" },
+              { label: "Reservada", className: "bg-yellow-500" },
               { label: "Manutenção", className: "bg-gray-400" },
             ].map((l, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -233,30 +329,33 @@ export default function AdminVagasPage() {
                     <div className="flex flex-wrap items-center gap-4">
                       {slotsGroup
                         .sort((a, b) => a.number - b.number)
-                        .map((slot) => (
-                          <div key={slot.id} className="relative" onClick={async () => {
-                            setEditingSlot(slot)
-                            if (mapStatus(slot) === "ocupada") {
-                              try {
-                                setSlotInfoLoading(true)
-                                const sensors = await api.get<Sensor[]>(`/sensors/parking-slot/${slot.id}`, { cache: "no-store" })
-                                setSlotSensors(Array.isArray(sensors) ? sensors : [])
-                                const data = await api.get<SensorsData[]>(`/sensors-data/parking-slot/${slot.id}`, { cache: "no-store" })
-                                setSlotRecentData(Array.isArray(data) ? data.slice(0, 10) : [])
-                              } catch (e) {
+                        .map((slot) => {
+                          const status = mapStatus(slot, sensorsData, reservations)
+                          return (
+                            <div key={slot.id} className="relative" onClick={async () => {
+                              setEditingSlot(slot)
+                              if (status === "ocupada" || status === "reservada") {
+                                try {
+                                  setSlotInfoLoading(true)
+                                  const sensors = await api.get<Sensor[]>(`/sensors/parking-slot/${slot.id}`, { cache: "no-store" }).catch(() => [])
+                                  setSlotSensors(Array.isArray(sensors) ? sensors : [])
+                                  const data = await api.get<SensorsData[]>(`/sensors-data/parking-slot/${slot.id}`, { cache: "no-store" }).catch(() => [])
+                                  setSlotRecentData(Array.isArray(data) ? data.slice(0, 10) : [])
+                                } catch (e) {
+                                  setSlotSensors([])
+                                  setSlotRecentData([])
+                                } finally {
+                                  setSlotInfoLoading(false)
+                                }
+                              } else {
                                 setSlotSensors([])
                                 setSlotRecentData([])
-                              } finally {
-                                setSlotInfoLoading(false)
                               }
-                            } else {
-                              setSlotSensors([])
-                              setSlotRecentData([])
-                            }
-                          }}>
-                            <ParkingSpot id={String(slot.number).padStart(2, '0')} status={mapStatus(slot)} />
-                          </div>
-                        ))}
+                            }}>
+                              <ParkingSpot id={String(slot.number).padStart(2, '0')} status={status} />
+                            </div>
+                          )
+                        })}
                     </div>
                   </div>
                 )
@@ -266,9 +365,36 @@ export default function AdminVagasPage() {
         )}
 
         {error && (
-          <div className="text-center py-4 text-red-600">{error}</div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <p className="text-red-700">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Error Message */}
+      {operationError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-red-700">{operationError}</p>
+          </div>
+          <button
+            onClick={() => setOperationError(null)}
+            className="text-red-600 hover:text-red-800 flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Create Modal */}
       {isCreateOpen && (
@@ -328,9 +454,9 @@ export default function AdminVagasPage() {
                     })
                     setIsCreateOpen(false)
                     await refresh()
-                  } catch (e) {
-                    console.error(e)
-                    alert("Falha ao criar vaga")
+                    setOperationError(null)
+                  } catch (e: any) {
+                    setOperationError(e?.message || "Falha ao criar vaga")
                   } finally {
                     setSaving(false)
                   }
@@ -351,7 +477,7 @@ export default function AdminVagasPage() {
               <h3 className="text-lg font-bold text-gray-900">Editar Vaga #{editingSlot.number}</h3>
             </div>
             <div className="p-5 space-y-4">
-              {mapStatus(editingSlot) === "ocupada" && (
+              {(mapStatus(editingSlot, sensorsData, reservations) === "ocupada" || mapStatus(editingSlot, sensorsData, reservations) === "reservada") && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-gray-700">Informações da Vaga</span>
@@ -369,7 +495,7 @@ export default function AdminVagasPage() {
                     <div className="max-h-28 overflow-auto">
                       {slotRecentData.slice(0, 5).map((d) => (
                         <div key={d.id} className="text-xs text-gray-700 flex items-center justify-between py-0.5">
-                          <span className="truncate mr-2">{String(d.value)}</span>
+                          <span className="truncate mr-2">{String(d.data || "")}</span>
                           <span className="text-gray-400 whitespace-nowrap">{new Date(d.createdAt).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                       ))}
@@ -404,17 +530,7 @@ export default function AdminVagasPage() {
             <div className="p-5 border-t border-gray-200 flex items-center justify-between">
               <button
                 className="inline-flex items-center gap-2 px-3 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
-                onClick={async () => {
-                  if (!confirm("Deseja remover esta vaga?")) return
-                  try {
-                    await api.delete<unknown>(`/parking-slots/${editingSlot.id}`)
-                    setEditingSlot(null)
-                    await refresh()
-                  } catch (e) {
-                    console.error(e)
-                    alert("Falha ao excluir vaga")
-                  }
-                }}
+                onClick={() => setDeleteConfirm(editingSlot.id)}
               >
                 <Trash2 className="w-4 h-4" /> Excluir
               </button>
@@ -435,9 +551,9 @@ export default function AdminVagasPage() {
                       })
                       setEditingSlot(null)
                       await refresh()
-                    } catch (e) {
-                      console.error(e)
-                      alert("Falha ao salvar alterações")
+                      setOperationError(null)
+                    } catch (e: any) {
+                      setOperationError(e?.message || "Falha ao salvar alterações")
                     } finally {
                       setSaving(false)
                     }
@@ -445,6 +561,54 @@ export default function AdminVagasPage() {
                 >
                   <Save className="w-4 h-4 mr-2" /> Salvar
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Tem certeza que deseja excluir esta vaga? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!deleteConfirm) return
+                    try {
+                      setOperationError(null)
+                      await api.delete<unknown>(`/parking-slots/${deleteConfirm}`)
+                      setDeleteConfirm(null)
+                      if (editingSlot?.id === deleteConfirm) {
+                        setEditingSlot(null)
+                      }
+                      await refresh()
+                    } catch (e: any) {
+                      setOperationError(e?.message || "Falha ao excluir vaga")
+                      setDeleteConfirm(null)
+                    }
+                  }}
+                  disabled={saving}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {saving ? "Excluindo..." : "Excluir"}
+                </button>
               </div>
             </div>
           </div>
