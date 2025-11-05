@@ -528,11 +528,37 @@ void loop() {
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/8.png?raw=true" alt="Tela de Reservas" width="800" />
 </div>
 
-### 📱 **App Mobile**
-- **Dashboard** com estatísticas em tempo real
-- **Mapa** de vagas disponíveis
-- **Reservas** com confirmação
-- **Pagamentos** integrados
+### 📱 **App Mobile (React Native)**
+
+<div align="center">
+  <h4>9. Dashboard do App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/9.png?raw=true" alt="Dashboard do App" width="400" />
+</div>
+
+<div align="center">
+  <h4>10. Gestão de Vagas no App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/10.png?raw=true" alt="Gestão de Vagas no App" width="400" />
+</div>
+
+<div align="center">
+  <h4>11. Tela de Reservas no App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/11.png?raw=true" alt="Tela de Reservas no App" width="400" />
+</div>
+
+<div align="center">
+  <h4>12. Minhas Reservas</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/12.png?raw=true" alt="Minhas Reservas" width="400" />
+</div>
+
+<div align="center">
+  <h4>13. Sensores no App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/13.png?raw=true" alt="Sensores no App" width="400" />
+</div>
+
+<div align="center">
+  <h4>14. Detalhes de Sensores</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/14.png?raw=true" alt="Detalhes de Sensores" width="400" />
+</div>
 
 ### 🔌 **Hardware IoT**
 - **Arduino** com sensores conectados

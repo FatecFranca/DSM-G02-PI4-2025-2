@@ -224,6 +224,50 @@ npm test
 - Escreva **testes** para novas funcionalidades (quando presentes)
 - Documente componentes e fluxos principais
 
+## 📱 Screenshots
+
+<div align="center">
+  <h3>Interface do Aplicativo Mobile</h3>
+</div>
+
+<div align="center">
+  <h4>9. Dashboard do App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/9.png?raw=true" alt="Dashboard do App" width="400" />
+  <p>Dashboard principal com estatísticas em tempo real e acesso rápido às funcionalidades</p>
+</div>
+
+<div align="center">
+  <h4>10. Gestão de Vagas no App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/10.png?raw=true" alt="Gestão de Vagas no App" width="400" />
+  <p>Visualização de vagas disponíveis com status atualizado via sensores IoT</p>
+</div>
+
+<div align="center">
+  <h4>11. Tela de Reservas no App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/11.png?raw=true" alt="Tela de Reservas no App" width="400" />
+  <p>Interface para criar e gerenciar reservas de estacionamento</p>
+</div>
+
+<div align="center">
+  <h4>12. Minhas Reservas</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/12.png?raw=true" alt="Minhas Reservas" width="400" />
+  <p>Histórico e gestão de reservas pessoais com opções de cancelamento</p>
+</div>
+
+<div align="center">
+  <h4>13. Sensores no App</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/13.png?raw=true" alt="Sensores no App" width="400" />
+  <p>Listagem e monitoramento de sensores IoT (vagas e estacionamentos)</p>
+</div>
+
+<div align="center">
+  <h4>14. Detalhes de Sensores</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/14.png?raw=true" alt="Detalhes de Sensores" width="400" />
+  <p>Visualização detalhada dos dados e histórico de leituras dos sensores</p>
+</div>
+
+---
+
 ## 📄 Licença
 
 Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
