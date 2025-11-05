@@ -1,11 +1,10 @@
 import prisma from "@/lib/prisma";
-import { CreateContactMessageInput, UpdateContactMessageInput, ContactMessageQueryInput } from "@/lib/validations/contactMessage";
 
 export class ContactMessageService {
   /**
    * Cria uma nova mensagem de contato
    */
-  static async create(data: CreateContactMessageInput) {
+  static async create(data: any) {
     try {
       const contactMessage = await prisma.contactMessage.create({
         data: {
@@ -25,7 +24,7 @@ export class ContactMessageService {
   /**
    * Busca todas as mensagens de contato com paginação e filtros
    */
-  static async findAll(query: ContactMessageQueryInput) {
+  static async findAll(query: any) {
     try {
       const { page = 1, limit = 10, viewed, search } = query;
       const skip = (page - 1) * limit;
@@ -101,7 +100,7 @@ export class ContactMessageService {
   /**
    * Atualiza o status de visualização de uma mensagem
    */
-  static async updateViewed(id: string, data: UpdateContactMessageInput) {
+  static async updateViewed(id: string, data: any) {
     try {
       const contactMessage = await prisma.contactMessage.update({
         where: { id },
