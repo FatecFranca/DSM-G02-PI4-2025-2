@@ -489,74 +489,60 @@ void loop() {
 ### 🌐 **Painel Web Administrativo**
 
 <div align="center">
-  <h4>Dashboard Principal</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/1.png?raw=true" alt="Dashboard Principal" width="800" />
 </div>
 
 <div align="center">
-  <h4>Gestão de Vagas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/2.png?raw=true" alt="Gestão de Vagas" width="800" />
 </div>
 
 <div align="center">
-  <h4>Gestão de Reservas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/3.png?raw=true" alt="Gestão de Reservas" width="800" />
 </div>
 
 <div align="center">
-  <h4>Gestão de Sensores</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/4.png?raw=true" alt="Gestão de Sensores" width="800" />
 </div>
 
 <div align="center">
-  <h4>Informações de Sensores</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/5.png?raw=true" alt="Informações de Sensores" width="800" />
 </div>
 
 <div align="center">
-  <h4>Gestão de Estacionamentos</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/6.png?raw=true" alt="Gestão de Estacionamentos" width="800" />
 </div>
 
 <div align="center">
-  <h4>Relatórios</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/7.png?raw=true" alt="Relatórios" width="800" />
 </div>
 
 <div align="center">
-  <h4>Tela de Reservas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/8.png?raw=true" alt="Tela de Reservas" width="800" />
 </div>
 
 ### 📱 **App Mobile (React Native)**
 
 <div align="center">
-  <h4>9. Dashboard do App</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/9.png?raw=true" alt="Dashboard do App" width="400" />
 </div>
 
 <div align="center">
-  <h4>10. Gestão de Vagas no App</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/10.png?raw=true" alt="Gestão de Vagas no App" width="400" />
 </div>
 
 <div align="center">
-  <h4>11. Tela de Reservas no App</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/11.png?raw=true" alt="Tela de Reservas no App" width="400" />
 </div>
 
 <div align="center">
-  <h4>12. Minhas Reservas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/12.png?raw=true" alt="Minhas Reservas" width="400" />
 </div>
 
 <div align="center">
-  <h4>13. Sensores no App</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/13.png?raw=true" alt="Sensores no App" width="400" />
 </div>
 
 <div align="center">
-  <h4>14. Detalhes de Sensores</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/14.png?raw=true" alt="Detalhes de Sensores" width="400" />
 </div>
 
