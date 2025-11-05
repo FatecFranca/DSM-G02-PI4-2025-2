@@ -548,6 +548,62 @@ useEffect(() => {
 
 ---
 
+## 📱 Screenshots
+
+<div align="center">
+  <h3>Interface do Painel Administrativo</h3>
+</div>
+
+<div align="center">
+  <h4>1. Dashboard Principal</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/1.png?raw=true" alt="Dashboard Principal" width="800" />
+  <p>Painel principal com métricas em tempo real, gráficos interativos e ações rápidas</p>
+</div>
+
+<div align="center">
+  <h4>2. Gestão de Vagas</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/2.png?raw=true" alt="Gestão de Vagas" width="800" />
+  <p>Visualização e gerenciamento de todas as vagas com status em tempo real via sensores IoT</p>
+</div>
+
+<div align="center">
+  <h4>3. Gestão de Reservas</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/3.png?raw=true" alt="Gestão de Reservas" width="800" />
+  <p>Controle completo de reservas com filtros avançados e detalhes de cada reserva</p>
+</div>
+
+<div align="center">
+  <h4>4. Gestão de Sensores</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/4.png?raw=true" alt="Gestão de Sensores" width="800" />
+  <p>Configuração e monitoramento de sensores IoT (vagas e estacionamentos)</p>
+</div>
+
+<div align="center">
+  <h4>5. Informações de Sensores</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/5.png?raw=true" alt="Informações de Sensores" width="800" />
+  <p>Análise detalhada com estatísticas, gráficos e dados históricos dos sensores</p>
+</div>
+
+<div align="center">
+  <h4>6. Gestão de Estacionamentos</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/6.png?raw=true" alt="Gestão de Estacionamentos" width="800" />
+  <p>CRUD completo de estacionamentos com informações detalhadas</p>
+</div>
+
+<div align="center">
+  <h4>7. Relatórios</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/7.png?raw=true" alt="Relatórios" width="800" />
+  <p>Relatórios avançados com gráficos, métricas e exportação de dados</p>
+</div>
+
+<div align="center">
+  <h4>8. Tela de Reservas</h4>
+  <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/8.png?raw=true" alt="Tela de Reservas" width="800" />
+  <p>Interface para clientes reservarem estacionamentos com seleção de vagas em tempo real</p>
+</div>
+
+---
+
 ## 📄 Licença
 
 Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](../../LICENSE) para mais detalhes.
