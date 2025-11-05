@@ -107,12 +107,6 @@ export default function TecnologiaPage() {
             specs: "9g, torque 1.8kg/cm, rotação 180°",
             function: "Abre e fecha barreiras automaticamente"
         },
-        {
-            name: "Display LCD 20×4",
-            description: "Interface visual para usuários",
-            specs: "20 colunas × 4 linhas, backlight azul",
-            function: "Mostra status das vagas e informações locais"
-        }
     ]
 
     const systemFlow = [

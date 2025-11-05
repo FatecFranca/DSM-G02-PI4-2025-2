@@ -15,14 +15,102 @@ import FilterPicker from '../../components/ui/FilterPicker';
 import SearchInput from '../../components/ui/SearchInput';
 import StatCard from '../../components/ui/StatCard';
 
-function mapStatus(slot: ParkingSlot): SpotStatus {
+type SensorsData = {
+    id: string;
+    sensorId: string;
+    parkingSlotId?: string;
+    data: string;
+    createdAt: string;
+    sensor: {
+        id: string;
+        name: string;
+        type: string;
+        parkingSlot?: {
+            id: string;
+            number: number;
+            parking: {
+                id: string;
+                name: string;
+                address: string;
+                city: string;
+            };
+        };
+    };
+};
+
+type ReservationData = {
+    id: string;
+    parkingSlotId: string;
+    userId: string;
+    vehiclePlate: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    createdAt: string;
+};
+
+// Função para obter o último dado de sensor de uma vaga
+function getLatestSensorData(slotId: string, sensorsData: SensorsData[]): SensorsData | null {
+    const latestData = sensorsData.find(sd => {
+        const slotIdFromSensor = sd.sensor?.parkingSlot?.id;
+        const slotIdDirect = sd.parkingSlotId;
+        const matchesSlot = slotIdFromSensor === slotId || slotIdDirect === slotId;
+        const hasData = sd.data != null && sd.data !== undefined && sd.data !== "";
+        return matchesSlot && hasData;
+    });
+    return latestData || null;
+}
+
+// Função para verificar se há reserva ativa para uma vaga
+function hasActiveReservation(slotId: string, reservations: ReservationData[]): boolean {
+    const now = new Date();
+    return reservations.some(r => 
+        r.parkingSlotId === slotId &&
+        r.status !== "cancelled" &&
+        new Date(r.startTime) <= now &&
+        new Date(r.endTime) >= now
+    );
+}
+
+function mapStatus(slot: ParkingSlot, sensorsData: SensorsData[], reservations: ReservationData[]): SpotStatus {
+    // Se não estiver ativa, sempre retorna manutenção
     if (!slot.isActive) return "manutencao";
+
+    // Buscar último dado do sensor
+    const latestData = getLatestSensorData(slot.id, sensorsData);
+    
+    // Se houver dados de sensor, priorizar o valor do sensor
+    if (latestData) {
+        const sensorValue = String(latestData.data || "").toUpperCase().trim();
+        
+        // Se o sensor detecta presença, sempre retorna ocupada (independente de reserva)
+        if (sensorValue === "PRESENT") {
+            return "ocupada";
+        }
+        
+        // Se o sensor detecta livre, verificar se há reserva
+        if (sensorValue === "FREE") {
+            const hasReservation = hasActiveReservation(slot.id, reservations);
+            if (hasReservation) {
+                return "reservada";
+            }
+            return "livre";
+        }
+    }
+    
+    // Se não houver dados de sensor ou valor desconhecido, usar fallback
+    const hasReservation = hasActiveReservation(slot.id, reservations);
+    if (hasReservation && slot.isAvailable) {
+        return "reservada";
+    }
     return slot.isAvailable ? "livre" : "ocupada";
 }
 
 export default function ParkingSpotsPage() {
     const [parkings, setParkings] = useState<Parking[]>([]);
     const [slots, setSlots] = useState<ParkingSlot[]>([]);
+    const [sensorsData, setSensorsData] = useState<SensorsData[]>([]);
+    const [reservations, setReservations] = useState<ReservationData[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,18 +122,41 @@ export default function ParkingSpotsPage() {
     const loadData = async () => {
         try {
             setError(null);
-            const [parkingsResponse, slotsResponse] = await Promise.all([
+            // Buscar dados usando métodos do ApiService
+            const [parkingsResponse, slotsResponse, sensorsResponse, reservationsResponse] = await Promise.all([
                 ApiService.getParkings(),
-                ApiService.getParkingSlots()
+                ApiService.getParkingSlots(),
+                // Buscar apenas o último dado de cada vaga (endpoint otimizado)
+                ApiService.getLatestSensorsDataBySlot(),
+                ApiService.getReservations().catch(() => ({ data: [] as ReservationData[] })),
             ]);
 
-            console.log(parkingsResponse.data);
-            console.log(slotsResponse.data);
             if (parkingsResponse.data) {
                 setParkings(parkingsResponse.data);
             }
             if (slotsResponse.data) {
-                setSlots(slotsResponse.data);
+                // Tratar resposta paginada ou não paginada
+                const slots = Array.isArray(slotsResponse.data) ? slotsResponse.data : (slotsResponse.data as any).data || [];
+                setSlots(Array.isArray(slots) ? slots : []);
+            }
+            // O novo endpoint já retorna apenas o último dado de cada vaga como array direto
+            if (sensorsResponse.data) {
+                setSensorsData(Array.isArray(sensorsResponse.data) ? sensorsResponse.data : []);
+            }
+            if (reservationsResponse.data) {
+                // Converter Reservation do ApiService para ReservationData
+                const reservationsArray = Array.isArray(reservationsResponse.data) ? reservationsResponse.data : [];
+                const convertedReservations: ReservationData[] = reservationsArray.map((r: any) => ({
+                    id: r.id,
+                    parkingSlotId: r.parkingSlotId,
+                    userId: r.userId || r.user?.id || '',
+                    vehiclePlate: r.vehiclePlate,
+                    startTime: r.startTime,
+                    endTime: r.endTime,
+                    status: r.status || 'active',
+                    createdAt: r.createdAt,
+                }));
+                setReservations(convertedReservations);
             }
         } catch (err) {
             setError('Erro ao carregar dados');
@@ -60,24 +171,24 @@ export default function ParkingSpotsPage() {
 
     const filtered = useMemo(() => {
         return slots.filter((slot) => {
-            const status = mapStatus(slot);
+            const status = mapStatus(slot, sensorsData, reservations);
             const statusOk = filter === "todas" ? true : status === filter;
             const parkingOk = parkingFilter === "todos" ? true : slot.parkingId === parkingFilter;
             const searchOk = searchTerm === "" ? true : `${slot.number}`.toLowerCase().includes(searchTerm.toLowerCase());
             return statusOk && parkingOk && searchOk;
         });
-    }, [slots, filter, parkingFilter, searchTerm]);
+    }, [slots, sensorsData, reservations, filter, parkingFilter, searchTerm]);
 
     const counts = useMemo(() => {
-        const allStatuses = slots.map(mapStatus);
+        const allStatuses = slots.map(slot => mapStatus(slot, sensorsData, reservations));
         return {
             total: slots.length,
             livre: allStatuses.filter((s) => s === "livre").length,
             ocupada: allStatuses.filter((s) => s === "ocupada").length,
-            reservada: 0, // No reservations in current model
+            reservada: allStatuses.filter((s) => s === "reservada").length,
             manutencao: allStatuses.filter((s) => s === "manutencao").length,
         };
-    }, [slots]);
+    }, [slots, sensorsData, reservations]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -254,14 +365,17 @@ export default function ParkingSpotsPage() {
                                     <View style={styles.spotsGrid}>
                                         {slotsGroup
                                             .sort((a, b) => a.number - b.number)
-                                            .map((slot) => (
-                                                <View key={slot.id} style={styles.spotWrapper}>
-                                                    <ParkingSpot 
-                                                        id={String(slot.number).padStart(2, '0')} 
-                                                        status={mapStatus(slot)} 
-                                                    />
-                                                </View>
-                                            ))}
+                                            .map((slot) => {
+                                                const status = mapStatus(slot, sensorsData, reservations);
+                                                return (
+                                                    <View key={slot.id} style={styles.spotWrapper}>
+                                                        <ParkingSpot 
+                                                            id={String(slot.number).padStart(2, '0')} 
+                                                            status={status} 
+                                                        />
+                                                    </View>
+                                                );
+                                            })}
                                     </View>
                                 </View>
                             );

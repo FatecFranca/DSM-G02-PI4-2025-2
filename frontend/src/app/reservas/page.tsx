@@ -21,6 +21,40 @@ type ParkingSlot = {
   updatedAt: string
 }
 
+type SensorsData = {
+  id: string
+  sensorId: string
+  parkingSlotId?: string
+  data: string
+  createdAt: string
+  sensor: {
+    id: string
+    name: string
+    type: string
+    parkingSlot?: {
+      id: string
+      number: number
+      parking: {
+        id: string
+        name: string
+        address: string
+        city: string
+      }
+    }
+  }
+}
+
+type Reservation = {
+  id: string
+  parkingSlotId: string
+  userId: string
+  vehiclePlate: string
+  startTime: string
+  endTime: string
+  status: string
+  createdAt: string
+}
+
 function addDurationToTime(timeHHMM: string, durationHours: number) {
   if (!timeHHMM) return ""
   const [h, m] = timeHHMM.split(":").map(Number)
@@ -39,11 +73,71 @@ function generateHourlyTimes(startHour = 6, endHour = 22) {
   return slots
 }
 
+// Função para obter o último dado de sensor de uma vaga
+// Como o backend já retorna apenas o último dado de cada vaga, apenas buscamos pelo slotId
+function getLatestSensorData(slotId: string, sensorsData: SensorsData[]): SensorsData | null {
+  const latestData = sensorsData.find(sd => {
+    const slotIdFromSensor = sd.sensor?.parkingSlot?.id
+    const slotIdDirect = sd.parkingSlotId
+    const matchesSlot = slotIdFromSensor === slotId || slotIdDirect === slotId
+    const hasData = sd.data != null && sd.data !== undefined && sd.data !== ""
+    return matchesSlot && hasData
+  })
+  return latestData || null
+}
+
+// Função para verificar se há reserva ativa para uma vaga
+function hasActiveReservation(slotId: string, reservations: Reservation[]): boolean {
+  const now = new Date()
+  return reservations.some(r => 
+    r.parkingSlotId === slotId &&
+    r.status !== "cancelled" &&
+    new Date(r.startTime) <= now &&
+    new Date(r.endTime) >= now
+  )
+}
+
+function mapStatus(slot: ParkingSlot, sensorsData: SensorsData[], reservations: Reservation[]): SpotStatus {
+  // Se não estiver ativa, sempre retorna manutenção
+  if (!slot.isActive) return "manutencao"
+
+  // Buscar último dado do sensor
+  const latestData = getLatestSensorData(slot.id, sensorsData)
+  
+  // Se houver dados de sensor, priorizar o valor do sensor
+  if (latestData) {
+    const sensorValue = String(latestData.data || "").toUpperCase().trim()
+    
+    // Se o sensor detecta presença, sempre retorna ocupada (independente de reserva)
+    if (sensorValue === "PRESENT") {
+      return "ocupada"
+    }
+    
+    // Se o sensor detecta livre, verificar se há reserva
+    if (sensorValue === "FREE") {
+      const hasReservation = hasActiveReservation(slot.id, reservations)
+      if (hasReservation) {
+        return "reservada"
+      }
+      return "livre"
+    }
+  }
+  
+  // Se não houver dados de sensor ou valor desconhecido, usar fallback
+  const hasReservation = hasActiveReservation(slot.id, reservations)
+  if (hasReservation && slot.isAvailable) {
+    return "reservada"
+  }
+  return slot.isAvailable ? "livre" : "ocupada"
+}
+
 export default function ReservasPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [parkings, setParkings] = useState<Parking[]>([])
   const [slots, setSlots] = useState<ParkingSlot[]>([])
+  const [sensorsData, setSensorsData] = useState<SensorsData[]>([])
+  const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedSpot, setSelectedSpot] = useState<string>("")
@@ -120,38 +214,37 @@ export default function ReservasPage() {
     }
   }
 
-  function mapStatus(slot: ParkingSlot): SpotStatus {
-    if (!slot.isActive) return "manutencao"
-    return slot.isAvailable ? "livre" : "ocupada"
-  }
-
-  const isSpotSelectable = (slot: ParkingSlot) => mapStatus(slot) === "livre"
+  const isSpotSelectable = (slot: ParkingSlot) => mapStatus(slot, sensorsData, reservations) === "livre"
 
   const filtered = useMemo(() => {
     return slots.filter((s) => {
-      const status = mapStatus(s)
+      const status = mapStatus(s, sensorsData, reservations)
       const statusOk = statusFilter === "todas" ? true : status === statusFilter
       const parkingOk = parkingFilter === "todos" ? true : s.parkingId === parkingFilter
       return statusOk && parkingOk
     })
-  }, [slots, statusFilter, parkingFilter])
+  }, [slots, sensorsData, reservations, statusFilter, parkingFilter])
 
   const counts = useMemo(() => {
-    const statuses = slots.map(mapStatus)
+    const statuses = slots.map(slot => mapStatus(slot, sensorsData, reservations))
     return {
       total: slots.length,
       livre: statuses.filter((s) => s === "livre").length,
       ocupada: statuses.filter((s) => s === "ocupada").length,
+      reservada: statuses.filter((s) => s === "reservada").length,
       manutencao: statuses.filter((s) => s === "manutencao").length,
     }
-  }, [slots])
+  }, [slots, sensorsData, reservations])
 
   const refresh = () => {
     setLoading(true)
     setError(null)
     Promise.all([
       api.get<Parking[]>("/parkings", { cache: "no-store" }),
-      api.get<ParkingSlot[]>("/parking-slots", { cache: "no-store" }),
+      api.get<ParkingSlot[] | { data: ParkingSlot[] }>("/parking-slots", { cache: "no-store" }),
+      // Buscar apenas o último dado de cada vaga (endpoint otimizado)
+      api.get<SensorsData[]>("/sensors-data/latest-by-slot", { cache: "no-store" }),
+      api.get<Reservation[]>("/reservations", { cache: "no-store" }).catch(() => [] as Reservation[]),
       api.get<Array<{
         plate: string
         parkingSlotId: string
@@ -161,9 +254,12 @@ export default function ReservasPage() {
         endTime: string
       }>>("/active-plates", { cache: "no-store" }),
     ])
-      .then(([ps, sl, ap]) => {
+      .then(([ps, sl, sensors, res, ap]) => {
         setParkings(ps)
-        setSlots(sl)
+        const slots = Array.isArray(sl) ? sl : (sl as any).data || []
+        setSlots(Array.isArray(slots) ? slots : [])
+        setSensorsData(Array.isArray(sensors) ? sensors : [])
+        setReservations(Array.isArray(res) ? res : [])
         setActivePlates(ap)
       })
       .catch((e: any) => setError(e?.message || "Falha ao carregar vagas"))
@@ -442,6 +538,7 @@ export default function ReservasPage() {
                         <option value="todas">Todas</option>
                         <option value="livre">Livres</option>
                         <option value="ocupada">Ocupadas</option>
+                        <option value="reservada">Reservadas</option>
                         <option value="manutencao">Manutenção</option>
                       </select>
                     </div>
@@ -492,11 +589,12 @@ export default function ReservasPage() {
                           <div className="flex items-center justify-between mb-3">
                             <div className="text-sm font-semibold text-gray-700">{parkingName}</div>
                             <div className="text-xs text-gray-500">
-                              Livre {group.filter(s => s.isActive && s.isAvailable).length} • Ocupada {group.filter(s => s.isActive && !s.isAvailable).length} • Manutenção {group.filter(s => !s.isActive).length}
+                              Livre {group.filter(s => mapStatus(s, sensorsData, reservations) === "livre").length} • Ocupada {group.filter(s => mapStatus(s, sensorsData, reservations) === "ocupada").length} • Reservada {group.filter(s => mapStatus(s, sensorsData, reservations) === "reservada").length} • Manutenção {group.filter(s => mapStatus(s, sensorsData, reservations) === "manutencao").length}
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-6">
                             {group.sort((a,b) => a.number - b.number).map((slot) => {
+                              const status = mapStatus(slot, sensorsData, reservations)
                               const selectable = isSpotSelectable(slot)
                               const selected = selectedSpot === slot.id
                               return (
@@ -508,7 +606,7 @@ export default function ReservasPage() {
                                   disabled={!selectable || !canChooseSpot}
                                   title={selectable ? 'Selecionar' : 'Indisponível'}
                                 >
-                                  <ParkingSpot id={String(slot.number).padStart(2,'0')} status={mapStatus(slot)} />
+                                  <ParkingSpot id={String(slot.number).padStart(2,'0')} status={status} />
                                   {!selectable && (
                                     <div className="absolute inset-0 rounded-2xl bg-white/50 cursor-not-allowed"></div>
                                   )}
@@ -556,6 +654,7 @@ export default function ReservasPage() {
                   {[
                     { label: "Livre", className: "bg-green-500" },
                     { label: "Ocupada", className: "bg-red-500" },
+                    { label: "Reservada", className: "bg-yellow-500" },
                     { label: "Manutenção", className: "bg-gray-400" },
                   ].map((l, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm text-gray-700">

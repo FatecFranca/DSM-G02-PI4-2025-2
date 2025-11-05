@@ -134,9 +134,6 @@ export default function ReservasPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Gestão de Reservas</h1>
                     <p className="text-gray-600">Gerencie todas as reservas dos estacionamentos</p>
                 </div>
-                <Button variant="primary" size="md" icon="send">
-                    Nova Reserva
-                </Button>
             </div>
 
             {/* Stats */}

@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || 'http://localhost:4000';
+const BACKEND_URL = 'https://api.smartparking.fun';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -293,6 +293,16 @@ class ApiService {
     return this.request<any>(`/parking-sensors/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // Sensors Data methods
+  async getLatestSensorsDataBySlot(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/sensors-data/latest-by-slot');
+  }
+
+  // Reservations methods (additional)
+  async getReservations(): Promise<ApiResponse<Reservation[]>> {
+    return this.request<Reservation[]>('/reservations');
   }
 
   // Contact messages methods

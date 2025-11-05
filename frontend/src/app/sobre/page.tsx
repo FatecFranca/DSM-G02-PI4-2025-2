@@ -36,12 +36,7 @@ export default function SobrePage() {
             specs: "ATmega328P, 14 I/O digitais, 6 analógicos",
             link: "https://marobotic.com/product/arduino-uno-r3-board/"
         },
-        {
-            name: "Display LCD 20×4",
-            description: "Interface de visualização para usuários",
-            specs: "20 colunas × 4 linhas, backlight azul",
-            link: "https://marobotic.com/product/20x4-lcd-display/"
-        },
+
         {
             name: "Módulo I2C LCD",
             description: "Interface de comunicação I2C para LCD",
@@ -67,23 +62,11 @@ export default function SobrePage() {
             link: "https://marobotic.com/product/ir-infrared-obstacle-avoidance-sensor/"
         },
         {
-            name: "Servo Motor SG-90",
-            description: "Controle de barreiras e mecanismos",
-            specs: "9g, torque 1.8kg/cm, 180° rotação",
-            link: "https://marobotic.com/product/mini-servo-motor-sg-90/"
-        },
-        {
             name: "Conector DC Fêmea",
             description: "Alimentação externa do sistema",
             specs: "5.5mm × 2.1mm, suporte até 5A",
             link: "https://marobotic.com/product/female-dc-power-jack-connector/"
         },
-        {
-            name: "Adaptador 5V 2A",
-            description: "Fonte de alimentação principal",
-            specs: "5V DC, 2A, entrada 100-240V AC",
-            link: "https://marobotic.com/product/5v-2amp-power-adapter/"
-        }
     ]
 
     const technologies = [

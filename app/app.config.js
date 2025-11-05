@@ -39,7 +39,7 @@ export default {
       typedRoutes: true
     },
     extra: {
-      backendUrl: process.env.BACKEND_URL || "http://localhost:4000"
+      backendUrl: process.env.BACKEND_URL || "https://api.smartparking.fun"
     }
   }
 };
