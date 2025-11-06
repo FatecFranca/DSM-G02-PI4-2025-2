@@ -555,42 +555,34 @@ useEffect(() => {
 </div>
 
 <div align="center">
-  <h4>1. Dashboard Principal</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/1.png?raw=true" alt="Dashboard Principal" width="800" />
   </div>
 
 <div align="center">
-  <h4>2. Gestão de Vagas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/2.png?raw=true" alt="Gestão de Vagas" width="800" />
 </div>
 
 <div align="center">
-  <h4>3. Gestão de Reservas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/3.png?raw=true" alt="Gestão de Reservas" width="800" />
 </div>
 
 <div align="center">
-  <h4>4. Gestão de Sensores</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/4.png?raw=true" alt="Gestão de Sensores" width="800" />
 </div>
 
 <div align="center">
-  <h4>5. Informações de Sensores</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/5.png?raw=true" alt="Informações de Sensores" width="800" />
 </div>
 
 <div align="center">
-  <h4>6. Gestão de Estacionamentos</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/6.png?raw=true" alt="Gestão de Estacionamentos" width="800" />
 </div>
 
 <div align="center">
-  <h4>7. Relatórios</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/7.png?raw=true" alt="Relatórios" width="800" />
 </div>
 
 <div align="center">
-  <h4>8. Tela de Reservas</h4>
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/8.png?raw=true" alt="Tela de Reservas" width="800" />
 </div>
 
