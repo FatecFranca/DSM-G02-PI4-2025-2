@@ -232,32 +232,26 @@ npm test
 
 <div align="center">
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/9.png?raw=true" alt="Dashboard do App" width="400" />
-  <p>Dashboard principal com estatísticas em tempo real e acesso rápido às funcionalidades</p>
 </div>
 
 <div align="center">
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/10.png?raw=true" alt="Gestão de Vagas no App" width="400" />
-  <p>Visualização de vagas disponíveis com status atualizado via sensores IoT</p>
 </div>
 
 <div align="center">
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/11.png?raw=true" alt="Tela de Reservas no App" width="400" />
-  <p>Interface para criar e gerenciar reservas de estacionamento</p>
 </div>
 
 <div align="center">
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/12.png?raw=true" alt="Minhas Reservas" width="400" />
-  <p>Histórico e gestão de reservas pessoais com opções de cancelamento</p>
 </div>
 
 <div align="center">
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/13.png?raw=true" alt="Sensores no App" width="400" />
-  <p>Listagem e monitoramento de sensores IoT (vagas e estacionamentos)</p>
 </div>
 
 <div align="center">
   <img src="https://github.com/FatecFranca/DSM-G02-PI4-2025-2/blob/main/apresentacao/images/14.png?raw=true" alt="Detalhes de Sensores" width="400" />
-  <p>Visualização detalhada dos dados e histórico de leituras dos sensores</p>
 </div>
 
 ---
