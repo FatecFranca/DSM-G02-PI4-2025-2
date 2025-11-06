@@ -16,29 +16,35 @@ import {
 import { useEffect, useMemo, useState } from "react"
 import api from "@/lib/api"
 
-type ParkingSlot = {
+type Reservation = {
     id: string
-    parkingId: string
-    isAvailable: boolean
-    isActive: boolean
-    number: number
+    parkingSlotId: string
+    vehiclePlate: string
+    startTime: string
+    endTime: string
     createdAt: string
-    updatedAt: string
+    userId: string | null
+    user: {
+        id: string
+        name: string
+        email: string
+    } | null
+    parkingSlot: {
+        id: string
+        number: number
+        parking: {
+            id: string
+            name: string
+        }
+    }
 }
 
-type SensorsData = {
-    id: string
-    sensorId: string
-    parkingSlotId?: string
-    value?: string | number | boolean
-    createdAt: string
-}
-
-type DerivedReservation = {
+type ReservationDisplay = {
     id: string
     user: string
     vehicle: string
     spot: string
+    parkingName: string
     startTime: string
     endTime: string
     status: "active" | "completed" | "cancelled" | "pending"
@@ -46,10 +52,47 @@ type DerivedReservation = {
     createdAt: string
 }
 
+// Preço por hora (R$ 8,00/h)
+const PRICE_PER_HOUR = 8
+
+// Função para calcular o status da reserva baseado nas datas
+function calculateStatus(reservation: Reservation): "active" | "completed" | "cancelled" | "pending" {
+    const now = new Date()
+    const startTime = new Date(reservation.startTime)
+    const endTime = new Date(reservation.endTime)
+    
+    // Se já passou do término, está concluída
+    if (now > endTime) {
+        return "completed"
+    }
+    
+    // Se já começou mas ainda não terminou, está ativa
+    if (now >= startTime && now <= endTime) {
+        return "active"
+    }
+    
+    // Se ainda não começou, está pendente
+    if (now < startTime) {
+        return "pending"
+    }
+    
+    return "pending"
+}
+
+// Função para calcular o preço baseado na duração
+function calculatePrice(startTime: string, endTime: string): string {
+    const start = new Date(startTime)
+    const end = new Date(endTime)
+    const diffMs = end.getTime() - start.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    const price = Math.max(1, Math.ceil(diffHours)) * PRICE_PER_HOUR
+    return `R$ ${price.toFixed(2)}`
+}
+
 export default function ReservasPage() {
     const [selectedFilter, setSelectedFilter] = useState("all")
     const [searchTerm, setSearchTerm] = useState("")
-    const [slots, setSlots] = useState<ParkingSlot[]>([])
+    const [reservations, setReservations] = useState<Reservation[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -58,8 +101,8 @@ export default function ReservasPage() {
             setLoading(true)
             setError(null)
             try {
-                const slotsData = await api.get<ParkingSlot[]>("/parking-slots", { cache: "no-store" })
-                setSlots(slotsData)
+                const reservationsData = await api.get<Reservation[]>("/reservations", { cache: "no-store" })
+                setReservations(reservationsData)
             } catch (e: any) {
                 setError(e?.message || "Falha ao carregar reservas")
             } finally {
@@ -69,23 +112,29 @@ export default function ReservasPage() {
         load()
     }, [])
 
-    const reservations: DerivedReservation[] = useMemo(() => {
-        // Deriva "reservas" das vagas ocupadas e ativas; horários são inferidos como createdAt do slot
-        return slots
-            .filter(s => s.isActive && !s.isAvailable)
-            .sort((a, b) => b.number - a.number)
-            .map<DerivedReservation>((s) => ({
-                id: s.id,
-                user: "—",
-                vehicle: "—",
-                spot: String(s.number).padStart(2, '0'),
-                startTime: s.createdAt,
-                endTime: s.updatedAt,
-                status: "active",
-                price: "—",
-                createdAt: s.createdAt,
-            }))
-    }, [slots])
+    const reservationsDisplay: ReservationDisplay[] = useMemo(() => {
+        return reservations.map((reservation) => {
+            const status = calculateStatus(reservation)
+            const price = calculatePrice(reservation.startTime, reservation.endTime)
+            
+            return {
+                id: reservation.id,
+                user: reservation.user?.name || "—",
+                vehicle: reservation.vehiclePlate,
+                spot: reservation.parkingSlot && typeof reservation.parkingSlot.number !== 'undefined'
+                    ? String(reservation.parkingSlot.number).padStart(2, '0')
+                    : "—",
+                parkingName: reservation.parkingSlot && reservation.parkingSlot.parking
+                    ? reservation.parkingSlot.parking.name
+                    : "—",
+                startTime: reservation.startTime,
+                endTime: reservation.endTime,
+                status,
+                price,
+                createdAt: reservation.createdAt,
+            }
+        })
+    }, [reservations])
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -107,11 +156,12 @@ export default function ReservasPage() {
         }
     }
 
-    const filteredReservations = reservations.filter(reservation => {
+    const filteredReservations = reservationsDisplay.filter(reservation => {
         const matchesSearch = reservation.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             reservation.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
             reservation.vehicle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            reservation.spot.toLowerCase().includes(searchTerm.toLowerCase())
+            reservation.spot.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            reservation.parkingName.toLowerCase().includes(searchTerm.toLowerCase())
 
         const matchesFilter = selectedFilter === "all" || reservation.status === selectedFilter
 
@@ -119,11 +169,11 @@ export default function ReservasPage() {
     })
 
     const stats = {
-        total: reservations.length,
-        active: reservations.filter(r => r.status === "active").length,
-        completed: reservations.filter(r => r.status === "completed").length,
-        cancelled: reservations.filter(r => r.status === "cancelled").length,
-        pending: reservations.filter(r => r.status === "pending").length
+        total: reservationsDisplay.length,
+        active: reservationsDisplay.filter(r => r.status === "active").length,
+        completed: reservationsDisplay.filter(r => r.status === "completed").length,
+        cancelled: reservationsDisplay.filter(r => r.status === "cancelled").length,
+        pending: reservationsDisplay.filter(r => r.status === "pending").length
     }
 
     return (
@@ -194,7 +244,23 @@ export default function ReservasPage() {
                 </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-800 text-sm">{error}</p>
+                </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Carregando reservas...</p>
+                </div>
+            )}
+
             {/* Reservations Table */}
+            {!loading && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
                     <h2 className="text-lg font-semibold text-gray-900">Reservas ({filteredReservations.length})</h2>
@@ -251,7 +317,10 @@ export default function ReservasPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                                            <span className="text-sm text-gray-900">{reservation.spot}</span>
+                                            <div>
+                                                <span className="text-sm text-gray-900">{reservation.spot}</span>
+                                                <div className="text-xs text-gray-500">{reservation.parkingName}</div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -310,6 +379,7 @@ export default function ReservasPage() {
                     </div>
                 )}
             </div>
+            )}
         </div>
     )
 }

@@ -69,9 +69,6 @@ export default function Header() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <Button variant="primary" size="md">
-                                Demonstração
-                            </Button>
                             <Button 
                                 variant="secondary" 
                                 size="md"

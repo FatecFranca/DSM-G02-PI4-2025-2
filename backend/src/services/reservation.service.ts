@@ -63,6 +63,27 @@ class ReservationService {
   async list(params: { parkingSlotId?: string } = {}) {
     return prisma.reservation.findMany({
       where: { parkingSlotId: params.parkingSlotId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        parkingSlot: {
+          select: {
+            id: true,
+            number: true,
+            parking: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: { startTime: "desc" },
     });
   }

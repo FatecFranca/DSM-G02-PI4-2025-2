@@ -45,6 +45,10 @@ export default function ClientMyReservationsPage() {
         durationHours: 1,
         vehiclePlate: ""
     })
+    const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null)
+    const [cancelLoading, setCancelLoading] = useState(false)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null)
 
     const load = async () => {
         setLoading(true)
@@ -59,13 +63,29 @@ export default function ClientMyReservationsPage() {
         }
     }
 
-    const cancel = async (id: string) => {
-        if (!confirm("Cancelar esta reserva?")) return
+    const openCancelConfirm = (id: string) => {
+        setCancelConfirmId(id)
+        setErrorMessage(null)
+    }
+
+    const closeCancelConfirm = () => {
+        setCancelConfirmId(null)
+        setErrorMessage(null)
+    }
+
+    const confirmCancel = async () => {
+        if (!cancelConfirmId) return
+        
+        setCancelLoading(true)
+        setErrorMessage(null)
         try {
-            await api.delete(`/reservations/${id}`)
+            await api.delete(`/reservations/${cancelConfirmId}`)
             await load()
-        } catch (e) {
-            alert("Falha ao cancelar reserva")
+            closeCancelConfirm()
+        } catch (e: any) {
+            setErrorMessage(e?.message || "Falha ao cancelar reserva")
+        } finally {
+            setCancelLoading(false)
         }
     }
 
@@ -93,10 +113,12 @@ export default function ClientMyReservationsPage() {
             vehiclePlate: reservation.vehiclePlate
         })
         setEditingId(reservation.id)
+        setEditErrorMessage(null)
     }
 
     const saveEdit = async () => {
         if (!editingId) return
+        setEditErrorMessage(null)
         try {
             await api.put(`/reservations/${editingId}`, {
                 parkingSlotId: reservations.find(r => r.id === editingId)?.parkingSlotId,
@@ -106,14 +128,16 @@ export default function ClientMyReservationsPage() {
                 durationHours: editData.durationHours
             })
             setEditingId(null)
+            setEditErrorMessage(null)
             await load()
         } catch (e: any) {
-            alert(e?.message || "Falha ao atualizar reserva")
+            setEditErrorMessage(e?.message || "Falha ao atualizar reserva")
         }
     }
 
     const cancelEdit = () => {
         setEditingId(null)
+        setEditErrorMessage(null)
         setEditData({
             date: "",
             startHour: "",
@@ -264,19 +288,26 @@ export default function ClientMyReservationsPage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-sm">
                                                     {isEditing ? (
-                                                        <div className="flex gap-2">
-                                                            <button 
-                                                                className="text-green-600 hover:text-green-900 inline-flex items-center gap-1"
-                                                                onClick={saveEdit}
-                                                            >
-                                                                <Save className="w-4 h-4" /> Salvar
-                                                            </button>
-                                                            <button 
-                                                                className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
-                                                                onClick={cancelEdit}
-                                                            >
-                                                                <X className="w-4 h-4" /> Cancelar
-                                                            </button>
+                                                        <div className="space-y-2">
+                                                            {editErrorMessage && (
+                                                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-2">
+                                                                    <p className="text-red-800 text-xs">{editErrorMessage}</p>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex gap-2">
+                                                                <button 
+                                                                    className="text-green-600 hover:text-green-900 inline-flex items-center gap-1"
+                                                                    onClick={saveEdit}
+                                                                >
+                                                                    <Save className="w-4 h-4" /> Salvar
+                                                                </button>
+                                                                <button 
+                                                                    className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
+                                                                    onClick={cancelEdit}
+                                                                >
+                                                                    <X className="w-4 h-4" /> Cancelar
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ) : (
                                                         <div className="flex gap-2">
@@ -288,7 +319,7 @@ export default function ClientMyReservationsPage() {
                                                             </button>
                                                             <button 
                                                                 className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
-                                                                onClick={() => cancel(r.id)}
+                                                                onClick={() => openCancelConfirm(r.id)}
                                                             >
                                                                 <Trash2 className="w-4 h-4" /> Cancelar
                                                             </button>
@@ -306,6 +337,63 @@ export default function ClientMyReservationsPage() {
             </main>
 
             <Footer />
+
+            {/* Modal de Confirmação de Cancelamento */}
+            {cancelConfirmId && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Cancelar Reserva</h3>
+                            <button
+                                onClick={closeCancelConfirm}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                disabled={cancelLoading}
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="mb-6">
+                            <p className="text-gray-700 mb-4">
+                                Tem certeza que deseja cancelar esta reserva? Esta ação não pode ser desfeita.
+                            </p>
+                            
+                            {errorMessage && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                                    <p className="text-red-800 text-sm">{errorMessage}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={closeCancelConfirm}
+                                disabled={cancelLoading}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Não, manter reserva
+                            </button>
+                            <button
+                                onClick={confirmCancel}
+                                disabled={cancelLoading}
+                                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {cancelLoading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Cancelando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-4 h-4" />
+                                        Sim, cancelar
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -4,7 +4,6 @@ export default function Footer() {
     const footerLinks = {
         produto: [
             { name: "Vagas", href: "/vagas" },
-            { name: "Reservar", href: "/reservar" },
             { name: "Tecnologia", href: "/tecnologia" },
         ],
         empresa: [

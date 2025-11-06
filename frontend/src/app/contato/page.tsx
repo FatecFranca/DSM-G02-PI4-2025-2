@@ -103,7 +103,7 @@ export default function ContatoPage() {
             if (error instanceof Error && error.message) {
                 try {
                     parsed = JSON.parse(error.message)
-                } catch {}
+                } catch { }
             }
 
             if (parsed?.details && Array.isArray(parsed.details)) {
@@ -203,11 +203,12 @@ export default function ContatoPage() {
                                 </p>
                                 <Button
                                     variant="primary"
-                                    className="mt-4"
+                                    className="mt-4 mx-auto block"
                                     onClick={() => setIsSubmitted(false)}
                                 >
                                     Enviar Nova Mensagem
                                 </Button>
+
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">

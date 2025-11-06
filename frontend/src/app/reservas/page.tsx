@@ -9,6 +9,7 @@ import ParkingSpot, { SpotStatus } from "@/components/parking/ParkingSpot"
 import { Calendar, Clock, MapPin, Car, User, CreditCard, CheckCircle, RefreshCcw } from "lucide-react"
 import api from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
+import { maskPlate, validatePlate } from "@/lib/plate"
 
 type Parking = { id: string; name: string }
 type ParkingSlot = {
@@ -147,6 +148,7 @@ export default function ReservasPage() {
   const [name, setName] = useState<string>(user?.name || "")
   const [email, setEmail] = useState<string>(user?.email || "")
   const [plate, setPlate] = useState<string>("")
+  const [plateError, setPlateError] = useState<string>("")
   const [payment, setPayment] = useState<"pix" | "cartao">("pix")
   const [submitted, setSubmitted] = useState(false)
   const [formError, setFormError] = useState<string>("")
@@ -172,7 +174,8 @@ export default function ReservasPage() {
   const endTime = useMemo(() => addDurationToTime(startTime, duration), [startTime, duration])
 
   const canChooseSpot = useMemo(() => {
-    return Boolean(date && startTime && duration && name && email && plate)
+    const plateValid = plate.length === 7 && validatePlate(plate).isValid
+    return Boolean(date && startTime && duration && name && email && plateValid)
   }, [date, startTime, duration, name, email, plate])
 
   const canSubmit = useMemo(() => {
@@ -181,6 +184,15 @@ export default function ReservasPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validar placa antes de submeter
+    const plateValidation = validatePlate(plate)
+    if (!plateValidation.isValid) {
+      setPlateError(plateValidation.error || "Placa inválida")
+      setFormError("Corrija os erros no formulário antes de continuar.")
+      return
+    }
+    
     if (!canSubmit) {
       setFormError(
         selectedSpot
@@ -190,6 +202,7 @@ export default function ReservasPage() {
       return
     }
     setFormError("")
+    setPlateError("")
 
     try {
       // Monta payload conforme especificação do usuário
@@ -416,12 +429,52 @@ export default function ReservasPage() {
                         <input
                           type="text"
                           value={plate}
-                          onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                          placeholder="AAA0A00"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          onChange={(e) => {
+                            const masked = maskPlate(e.target.value)
+                            setPlate(masked)
+                            // Limpar erro quando o usuário começar a digitar
+                            if (plateError) {
+                              setPlateError("")
+                            }
+                            // Validar em tempo real quando tiver 7 caracteres
+                            if (masked.length === 7) {
+                              const validation = validatePlate(masked)
+                              if (!validation.isValid) {
+                                setPlateError(validation.error || "Placa inválida")
+                              } else {
+                                setPlateError("")
+                              }
+                            }
+                          }}
+                          onBlur={() => {
+                            // Validar quando o campo perder o foco
+                            if (plate) {
+                              const validation = validatePlate(plate)
+                              if (!validation.isValid) {
+                                setPlateError(validation.error || "Placa inválida")
+                              } else {
+                                setPlateError("")
+                              }
+                            }
+                          }}
+                          placeholder="ABC1234 ou ABC1D23"
+                          maxLength={7}
+                          className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                            plateError 
+                              ? "border-red-500 focus:ring-red-500" 
+                              : "border-gray-300"
+                          }`}
                           required
                         />
                       </div>
+                      {plateError && (
+                        <p className="mt-1 text-sm text-red-600">{plateError}</p>
+                      )}
+                      {!plateError && plate.length > 0 && plate.length < 7 && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Digite {7 - plate.length} caractere{7 - plate.length > 1 ? "s" : ""} restante{7 - plate.length > 1 ? "s" : ""}
+                        </p>
+                      )}
                     </div>
 
                     <div>
