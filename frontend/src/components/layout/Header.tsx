@@ -32,9 +32,6 @@ export default function Header() {
                         <a href="/funcionalidades" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">
                             Funcionalidades
                         </a>
-                        <a href="/vagas" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">
-                            Vagas
-                        </a>
                         <a href="/tecnologia" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">
                             Tecnologia
                         </a>
